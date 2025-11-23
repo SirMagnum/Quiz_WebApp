@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-indigo-700">Choose Your Mode</h1>
+            <p class="text-sm text-gray-500 mt-1">Pick a vibe — each mode has its own rules. Click a card to jump
+                straight into that mode.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Adaptive -->
+        <a href="{{ url_for('quiz.start_mode', mode='adaptive') }}"
+            class="group block p-6 bg-white rounded-2xl shadow hover:shadow-2xl transform hover:-translate-y-1 transition">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-full bg-indigo-100 p-2">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3">
+                                </path>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-indigo-700">Adaptive</h2>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3">
+                        Difficulty adjusts to you: quick + correct → harder, slow/wrong → easier. Perfect for leveling
+                        up steadily.
+                    </p>
+                </div>
+
+                <div class="text-right">
+                    <div class="inline-flex items-center gap-2 text-sm text-gray-500">
+                        <span class="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 font-medium">Dynamic</span>
+                    </div>
+                    <div class="mt-3 text-xs text-gray-400">Best for general practice</div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Challenger -->
+        <a href="{{ url_for('quiz.start_mode', mode='challenger') }}"
+            class="group block p-6 bg-white rounded-2xl shadow hover:shadow-2xl transform hover:-translate-y-1 transition">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-full bg-orange-100 p-2">
+                            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 11l3 3L22 4"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-indigo-700">Challenger</h2>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3">
+                        Level up through harder questions. Time tightens as you climb — perfect for testing progression.
+                    </p>
+                </div>
+
+                <div class="text-right">
+                    <span class="px-2 py-1 rounded-full bg-orange-50 text-orange-700 font-medium">Progressive</span>
+                    <div class="mt-3 text-xs text-gray-400">Good for tests & comps</div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Minute Rush -->
+        <a href="{{ url_for('quiz.start_mode', mode='minuterush') }}"
+            class="group block p-6 bg-white rounded-2xl shadow hover:shadow-2xl transform hover:-translate-y-1 transition">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-full bg-green-100 p-2">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3M12 2a10 10 0 100 20 10 10 0 000-20z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-indigo-700">Minute Rush</h2>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3">
+                        Pick total time and blast through as many questions as possible. Fast pace, high energy.
+                    </p>
+                </div>
+
+                <div class="text-right">
+                    <span class="px-2 py-1 rounded-full bg-green-50 text-green-700 font-medium">Timed</span>
+                    <div class="mt-3 text-xs text-gray-400">Great for speed training</div>
+                </div>
+            </div>
+        </a>
+
+        <!-- First Strike -->
+        <a href="{{ url_for('quiz.start_mode', mode='firststrike') }}"
+            class="group block p-6 bg-white rounded-2xl shadow hover:shadow-2xl transform hover:-translate-y-1 transition">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-full bg-red-100 p-2">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-indigo-700">First Strike</h2>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3">
+                        One mistake and it’s over. Go perfect and climb the leaderboard — intense and unforgiving.
+                    </p>
+                </div>
+
+                <div class="text-right">
+                    <span class="px-2 py-1 rounded-full bg-red-50 text-red-700 font-medium">High Stakes</span>
+                    <div class="mt-3 text-xs text-gray-400">For pros only</div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Level Infinity -->
+        <a href="{{ url_for('quiz.start_mode', mode='levelinfinity') }}"
+            class="group block p-6 bg-white rounded-2xl shadow hover:shadow-2xl transform hover:-translate-y-1 transition">
+            <div class="flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="rounded-full bg-purple-100 p-2">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 20l9-7-9-7-9 7 9 7z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-xl font-semibold text-indigo-700">Level Infinity</h2>
+                    </div>
+
+                    <p class="text-gray-600 text-sm mt-3">
+                        Mixed question types and special bonuses — keeps you on your toes with variety and surprises.
+                    </p>
+                </div>
+
+                <div class="text-right">
+                    <span class="px-2 py-1 rounded-full bg-purple-50 text-purple-700 font-medium">Mixed</span>
+                    <div class="mt-3 text-xs text-gray-400">Fun & unpredictable</div>
+                </div>
+            </div>
+        </a>
+
+    </div>
+
+    <!-- footer hints -->
+    <div class="mt-8 text-sm text-gray-500">
+        <p><strong>Tip:</strong> Adaptive mode adjusts difficulty based on speed and correctness. You can always switch
+            modes between runs.</p>
+    </div>
+</div>
+
+{% endblock %}

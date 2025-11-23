@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-3xl font-bold text-indigo-700 mb-6">Teacher Analytics</h2>
+
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <div id="summary" class="grid grid-cols-2 gap-4"></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-xl font-semibold mb-3">Per-mode stats</h3>
+    <table class="w-full text-left text-sm" id="perModeTable">
+      <thead class="text-gray-500">
+        <tr><th>Mode</th><th>Count</th><th>Avg Score</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-xl font-semibold mb-3">Difficulty distribution</h3>
+    <table class="w-full text-left text-sm" id="diffTable">
+      <thead class="text-gray-500"><tr><th>Diff</th><th>Seen</th><th>Acc</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow mt-6">
+  <h3 class="text-xl font-semibold mb-3">Top Questions</h3>
+  <div id="topQuestions"></div>
+</div>
+
+<script>
+async function loadAnalytics() {
+  const res = await fetch("/teacher/analytics");
+  if (!res.ok) {
+    document.getElementById("summary").innerText = "Failed to load analytics.";
+    return;
+  }
+  const js = await res.json();
+
+  // Summary
+  const summary = document.getElementById("summary");
+  summary.innerHTML = `
+    <div class="p-4 border rounded">
+      <div class="text-sm text-gray-500">Total Attempts</div>
+      <div class="text-2xl font-bold">${js.total_attempts}</div>
+    </div>
+    <div class="p-4 border rounded">
+      <div class="text-sm text-gray-500">Avg Score</div>
+      <div class="text-2xl font-bold">${js.avg_score}</div>
+    </div>
+  `;
+
+  // per mode
+  const ptbody = document.querySelector("#perModeTable tbody");
+  ptbody.innerHTML = js.per_mode.map(m => `
+    <tr>
+      <td>${m.mode}</td>
+      <td>${m.count}</td>
+      <td>${m.avg}</td>
+    </tr>
+  `).join("");
+
+  // difficulty
+  const dtbody = document.querySelector("#diffTable tbody");
+  dtbody.innerHTML = js.diff_list.map(d => `
+    <tr>
+      <td>${d.difficulty}</td>
+      <td>${d.seen}</td>
+      <td>${d.accuracy === null ? "—" : d.accuracy + "%"}</td>
+    </tr>
+  `).join("");
+
+  // top questions
+  const top = document.getElementById("topQuestions");
+  top.innerHTML = js.top_questions.map(q => `
+    <div class="p-3 border rounded mb-2">
+      <div class="font-semibold">[${q.qid}] ${q.prompt}</div>
+      <div class="text-sm text-gray-500">Seen: ${q.seen} · Accuracy: ${q.accuracy}% · Difficulty: ${q.difficulty}</div>
+    </div>
+  `).join("");
+}
+
+document.addEventListener("DOMContentLoaded", loadAnalytics);
+</script>
+
+{% endblock %}

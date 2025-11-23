@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title if title else "QuizApp" }}</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        body {
+            background: #f4f6f9;
+        }
+
+        .fade {
+            animation: fadeIn .4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    {% if current_user.is_authenticated %}
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-64 bg-indigo-700 text-white p-6 space-y-6 shadow-lg">
+
+        <h2 class="text-2xl font-bold">QuizApp</h2>
+
+        <nav class="space-y-3">
+            <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('auth.index') }}">
+                Home
+            </a>
+
+            <!-- TEACHER NAVIGATION -->
+            {% if current_user.role is defined and current_user.role.value == "teacher" %}
+            <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('teacher.dashboard') }}">
+                Dashboard
+            </a>
+            <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('teacher.questions') }}">
+                Questions
+            </a>
+            <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('teacher.analytics') }}">
+                Analytics
+
+                <!-- STUDENT NAVIGATION -->
+                {% else %}
+                <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('quiz.start') }}">
+                    Start Quiz
+                </a>
+                <a class="block hover:bg-indigo-600 p-3 rounded" href="{{ url_for('quiz.my_attempts') }}">
+                    My Attempts
+                </a>
+                {% endif %}
+
+                <!-- COMMON LOGOUT -->
+                <a class="block hover:bg-red-600 bg-red-500 p-3 rounded mt-8" href="{{ url_for('auth.logout') }}">
+                    Logout
+                </a>
+        </nav>
+    </aside>
+    {% endif %}
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 p-10 fade">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="space-y-2 mb-4">
+            {% for cat, msg in messages %}
+            <div class="p-3 rounded {{ 
+                    'bg-green-100 text-green-800' if cat == 'success' else 
+                    'bg-red-100 text-red-800' }}">
+                {{ msg }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        lucide.createIcons && lucide.createIcons();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1 class="text-3xl font-bold text-indigo-700 mb-6">My Profile</h1>
+
+<div class="grid grid-cols-1 gap-6">
+
+    <!-- OVERVIEW CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Total Attempts -->
+        <div class="bg-white shadow p-6 rounded-2xl text-center">
+            <p class="text-sm text-gray-500">Total Attempts</p>
+            <p class="text-4xl font-bold text-indigo-600">{{ total_attempts }}</p>
+        </div>
+
+        <!-- Average Score -->
+        <div class="bg-white shadow p-6 rounded-2xl text-center">
+            <p class="text-sm text-gray-500">Average Score</p>
+            <p class="text-4xl font-bold text-indigo-600">
+                {% if avg_score is not none %}
+                    {{ "%.2f"|format(avg_score) }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Best Score -->
+        <div class="bg-white shadow p-6 rounded-2xl text-center">
+            <p class="text-sm text-gray-500">Best Score</p>
+            <p class="text-4xl font-bold text-indigo-600">
+                {% if best_score is not none %}
+                    {{ best_score }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </p>
+        </div>
+
+    </div>
+
+    <!-- MODE STATS -->
+    <div class="bg-white shadow p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold mb-4">Performance by Mode</h2>
+
+        {% if mode_stats %}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {% for mode, ms in mode_stats.items() %}
+            <div class="border rounded-xl p-4 hover:shadow transition bg-gray-50">
+
+                <h3 class="text-lg font-semibold capitalize">{{ mode }}</h3>
+
+                <p class="text-gray-600 text-sm mt-1">
+                    Attempts: <b>{{ ms.count }}</b>
+                </p>
+
+                <p class="text-gray-600 text-sm">
+                    Avg Score:
+                    <b>
+                        {% if ms.count > 0 %}
+                            {{ "%.2f"|format(ms.total / ms.count) }}
+                        {% else %}
+                            0
+                        {% endif %}
+                    </b>
+                </p>
+
+            </div>
+            {% endfor %}
+
+        </div>
+        {% else %}
+            <p class="text-gray-500">No attempts yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- RECENT ATTEMPTS -->
+    <div class="bg-white shadow p-6 rounded-2xl">
+        <h2 class="text-xl font-semibold mb-4">Recent Attempts</h2>
+
+        {% if recent %}
+        <table class="w-full text-left text-sm">
+            <thead class="text-gray-500">
+                <tr>
+                    <th class="py-2">Mode</th>
+                    <th>Score</th>
+                    <th>Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for a in recent %}
+                <tr class="border-t">
+                    <td class="py-3 capitalize">{{ a.mode }}</td>
+                    <td>{{ a.score }}</td>
+                    <td>{{ a.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('quiz.results', attempt_id=a.id) }}"
+                           class="text-indigo-600 hover:underline">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+            <p class="text-gray-500">You haven't attempted any quizzes yet.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-3xl font-bold text-indigo-700 mb-6">Results</h2>
+
+<div class="bg-white p-6 rounded-xl shadow">
+  <p><strong>Mode:</strong> {{ attempt.mode }}</p>
+
+  <p>
+    <strong>Score:</strong>
+    {{ correct_count }}{% if total_questions %} / {{ total_questions }}{% endif %}
+    {% if percentage is not none %}
+      — <strong>{{ percentage }}%</strong>
+    {% endif %}
+  </p>
+
+  <p><strong>Started:</strong> {{ attempt.started_at }}</p>
+  <p><strong>Ended:</strong> {{ attempt.ended_at }}</p>
+
+  <hr class="my-4">
+
+  <h3 class="text-xl font-semibold mb-3">Details</h3>
+  <div class="space-y-3">
+    {% for e in details %}
+      <div class="p-3 bg-gray-50 rounded">
+        <p><strong>Question ID:</strong> {{ e.qid }} — <strong>Correct:</strong> {{ e.correct }}</p>
+        <p><strong>Selected:</strong> {{ e.selected }}</p>
+        <p><strong>Time used:</strong> {{ e.time_used }}</p>
+        <p class="text-gray-600"><small>{{ e.timestamp }}</small></p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

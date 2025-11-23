@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="grid grid-cols-1 gap-6">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-3xl font-bold text-indigo-700">Teacher Dashboard</h1>
+    <div class="text-sm text-gray-600">Manage students, questions, and view stats</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="grid grid-cols-2 gap-4">
+    <div class="bg-white p-6 rounded-xl shadow">
+      <div class="text-sm text-gray-500">Total Questions</div>
+      <div class="text-4xl font-bold text-indigo-600">{{ qcount }}</div>
+    </div>
+
+    <div class="bg-white p-6 rounded-xl shadow">
+      <div class="text-sm text-gray-500">Total Users</div>
+      <div class="text-4xl font-bold text-indigo-600">{{ ucount }}</div>
+    </div>
+  </div>
+
+  <!-- STUDENT MANAGEMENT -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-semibold">Students</h2>
+      <div class="text-sm text-gray-500">Create, search, or remove students</div>
+    </div>
+
+    <!-- Add student form -->
+    <form method="post" action="{{ url_for('teacher.add_student') }}" class="flex gap-3 mb-6">
+      <input name="username" placeholder="username" required class="px-3 py-2 border rounded w-64" />
+      <input name="password" placeholder="password" required type="password" class="px-3 py-2 border rounded w-64" />
+      <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Create</button>
+    </form>
+
+    <!-- Search bar -->
+    <input type="text" id="studentSearch" placeholder="Search students..." class="px-3 py-2 border rounded w-full mb-4"
+      onkeyup="filterStudents()">
+
+    <!-- Students table -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left" id="studentsTable">
+        <thead class="text-sm text-gray-500">
+          <tr>
+            <th class="py-2">#</th>
+            <th>Username</th>
+            <th>Avg Score</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody class="text-sm">
+          {% for s in students %}
+          <tr class="border-t">
+            <td class="py-3">{{ s.id }}</td>
+            <td>{{ s.username }}</td>
+
+            <td>
+              {% if s_avg.get(s.id) is not none %}
+              {{ '%.2f' | format(s_avg.get(s.id)) }}
+              {% else %}
+              N/A
+              {% endif %}
+            </td>
+
+            <td>
+              <a href="{{ url_for('teacher.view_student_attempts', uid=s.id) }}"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded mr-2">
+                Attempts
+              </a>
+              <a class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded mr-2" href="{{ url_for('teacher.manage_attempts') }}">
+                Manage Attempts
+              </a>
+
+
+              <form method="post" action="{{ url_for('teacher.delete_student', uid=s.id) }}" style="display:inline"
+                onsubmit="return confirm('Delete student {{ s.username }}?');">
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                  Delete
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterStudents() {
+    let input = document.getElementById("studentSearch").value.toLowerCase();
+    let rows = document.querySelectorAll("#studentsTable tbody tr");
+
+    rows.forEach(row => {
+      let username = row.children[1].innerText.toLowerCase();
+      row.style.display = username.includes(input) ? "" : "none";
+    });
+  }
+</script>
+
+{% endblock %}

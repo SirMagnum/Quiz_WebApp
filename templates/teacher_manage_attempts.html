@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!--
+  Full teacher_manage_attempts.html
+  - Clicking anywhere on the row toggles the checkbox (native <label> behavior)
+  - "Select All", "Delete Selected", and "Delete All" supported
+  - Row highlights on hover and when selected
+  - View / Delete buttons won't toggle selection
+-->
+
+<style>
+/* Row visuals */
+.attempt-row {
+  transition: background 0.15s, transform 0.08s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.attempt-row:hover { background: #f3f4f6; }
+.attempt-row:active { transform: scale(0.995); }
+.attempt-row.selected { background: #eef2ff; }
+
+/* ensure label spans full width for native toggle */
+.attempt-label {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* checkbox look & hit area */
+.attempt-checkbox {
+  cursor: pointer;
+  z-index: 2;
+  flex: 0 0 auto;
+}
+
+/* right-side actions shouldn't cause row toggle */
+.attempt-actions { flex: 0 0 auto; margin-left: 1rem; }
+
+/* responsive small tweaks */
+@media (max-width: 640px) {
+  .attempt-actions { display: flex; gap: .5rem; }
+  .attempt-row { padding: .75rem; }
+}
+</style>
+
+<h2 class="text-3xl font-bold text-indigo-700 mb-6">Manage Attempts</h2>
+
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <p class="text-sm text-gray-600">
+    Click any row to select it. Use "Delete Selected" to remove chosen attempts or "Delete All" to wipe this student's attempts.
+  </p>
+</div>
+
+{% if filtered_student %}
+  <!-- Filtered student view -->
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h3 class="text-xl font-semibold">Attempts — {{ filtered_student.username }}</h3>
+      <div class="text-sm text-gray-500">Showing attempts only for this student.</div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <form method="post"
+            action="{{ url_for('teacher.delete_student_attempts', uid=filtered_student.id) }}"
+            onsubmit="return confirm('Delete ALL attempts for {{ filtered_student.username }}? This is permanent.');">
+        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+          Delete All Attempts
+        </button>
+      </form>
+
+      <a href="{{ url_for('teacher.manage_attempts') }}" class="text-sm text-gray-600 hover:underline">Back to Students</a>
+    </div>
+  </div>
+
+  {% if attempts %}
+    <form method="post" action="{{ url_for('teacher.mass_delete_attempts') }}" id="massDeleteAttemptsForm">
+      <div class="flex items-center gap-4 mb-4">
+        <label class="flex items-center gap-2">
+          <input type="checkbox" id="selectAllAttempts" class="w-4 h-4">
+          <span>Select All</span>
+        </label>
+
+        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                onclick="return confirmMassDelete()">
+          Delete Selected
+        </button>
+
+        <input type="hidden" name="confirm_bulk" id="confirmBulkField" value="">
+      </div>
+
+      <div class="space-y-3">
+        {% for a in attempts %}
+          <div class="attempt-row p-3 rounded-lg border">
+            <!-- Use label to cover the whole left area (native click toggles checkbox) -->
+            <label class="attempt-label" for="chk{{ a.id }}">
+              <input id="chk{{ a.id }}" type="checkbox" name="aids" value="{{ a.id }}" class="attempt-checkbox w-4 h-4">
+
+              <div class="flex-1 min-w-0">
+                <div class="font-semibold truncate">Attempt #{{ a.id }} — {{ a.mode | capitalize }} — Score: {{ a.score }}</div>
+                <div class="text-sm text-gray-600 truncate">Started: {{ a.started_at }} · Ended: {{ a.ended_at or '—' }}</div>
+              </div>
+            </label>
+
+            <div class="attempt-actions flex items-center gap-3">
+              <a href="{{ url_for('quiz.results', attempt_id=a.id) }}"
+                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded"
+                 onclick="event.stopPropagation();">
+                View
+              </a>
+
+              <form method="post" action="{{ url_for('teacher.delete_attempt', aid=a.id) }}" style="display:inline"
+                    onsubmit="event.stopPropagation(); return confirm('Delete attempt #{{ a.id }}? This is permanent.');">
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </form>
+  {% else %}
+    <p class="text-gray-600">No attempts found for this student.</p>
+  {% endif %}
+
+{% else %}
+  <!-- Default: student list (summary) -->
+  <div class="bg-white p-4 rounded-lg shadow space-y-3">
+    {% if students %}
+      {% for s in students %}
+        <div class="flex items-center justify-between border-b py-3">
+          <div>
+            <div class="font-semibold">{{ s.username }}</div>
+            <div class="text-sm text-gray-500">Attempts: {{ counts_map.get(s.id, 0) }}</div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <a href="{{ url_for('teacher.manage_attempts') }}?uid={{ s.id }}"
+               class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded">View Attempts</a>
+
+            <form method="post" action="{{ url_for('teacher.delete_student_attempts', uid=s.id) }}"
+                  onsubmit="return confirm('Delete ALL attempts for {{ s.username }}?');" style="display:inline">
+              <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete All</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-gray-600">No students found.</p>
+    {% endif %}
+  </div>
+{% endif %}
+
+<script>
+/*
+  Behavior:
+  - No row click JS required for toggling (native label handles it)
+  - We sync the visual ".selected" class on checkbox change
+  - Select All toggles checkboxes and triggers change to update visuals
+*/
+
+document.addEventListener("DOMContentLoaded", () => {
+  // wire up checkbox -> row highlight
+  document.querySelectorAll('input.attempt-checkbox').forEach(cb => {
+    const row = cb.closest('.attempt-row');
+    if (!row) return;
+
+    // initialize
+    if (cb.checked) row.classList.add('selected');
+
+    // on change, toggle highlight
+    cb.addEventListener('change', () => {
+      if (cb.checked) row.classList.add('selected');
+      else row.classList.remove('selected');
+    });
+
+    // prevent action button clicks from toggling checkbox: ensure action buttons stop propagation
+    // (they already call event.stopPropagation() inline for safety)
+  });
+
+  // Select all: toggle checkboxes and dispatch change
+  const selectAll = document.getElementById('selectAllAttempts');
+  if (selectAll) {
+    selectAll.addEventListener('change', () => {
+      const checked = selectAll.checked;
+      document.querySelectorAll('input.attempt-checkbox').forEach(cb => {
+        if (cb.checked !== checked) {
+          cb.checked = checked;
+          cb.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+  }
+});
+
+// Confirm selected deletion with safety prompt for large deletes
+function confirmMassDelete() {
+  const selected = Array.from(document.querySelectorAll('input.attempt-checkbox:checked'));
+  if (selected.length === 0) {
+    alert("Select at least one attempt to delete.");
+    return false;
+  }
+
+  const threshold = 20;
+  if (selected.length > threshold) {
+    const v = prompt("You are deleting " + selected.length + " attempts. Type DELETE to confirm.");
+    if (v !== "DELETE") {
+      alert("Bulk delete cancelled.");
+      return false;
+    }
+    const f = document.getElementById("confirmBulkField");
+    if (f) f.value = "yes";
+  } else {
+    if (!confirm("Delete " + selected.length + " attempts?")) return false;
+  }
+  return true;
+}
+</script>
+
+{% endblock %}

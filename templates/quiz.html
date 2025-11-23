@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-4xl font-bold text-indigo-700 mb-6">Quiz</h2>
+
+<div class="bg-white p-8 rounded-2xl shadow-lg">
+
+  <div id="modeSelect" class="mb-6">
+    <p class="text-lg mb-2">Choose a mode</p>
+    <div class="flex gap-3 flex-wrap">
+      <button onclick="chooseMode('adaptive')" class="bg-indigo-600 text-white px-4 py-2 rounded">Adaptive</button>
+      <button onclick="chooseMode('challenger')" class="bg-indigo-600 text-white px-4 py-2 rounded">Challenger</button>
+      <button onclick="chooseMode('minuterush')" class="bg-indigo-600 text-white px-4 py-2 rounded">Minute Rush</button>
+      <button onclick="chooseMode('firststrike')" class="bg-indigo-600 text-white px-4 py-2 rounded">First Strike</button>
+      <button onclick="chooseMode('levelinfinity')" class="bg-indigo-600 text-white px-4 py-2 rounded">Level Infinity</button>
+    </div>
+  </div>
+
+  <div id="gameArea" style="display:none">
+    <div class="flex items-center justify-between mb-4">
+      <div>Mode: <strong id="modeName"></strong></div>
+      <div>Score: <strong id="score">0</strong></div>
+    </div>
+
+    <div id="timerWrap" class="mb-4">
+      <span id="timeLabel">Time left:</span> <span id="timeLeft">0</span>s
+    </div>
+
+    <div id="questionMeta" class="mb-3 text-sm text-gray-600">
+      <span id="qDifficulty"></span>
+    </div>
+
+    <div id="questionBox" class="p-6 bg-indigo-50 rounded-lg">
+      <div id="question" class="text-xl font-semibold mb-4"></div>
+      <div id="options" class="space-y-3"></div>
+    </div>
+
+    <div class="mt-4">
+      <button onclick="endRun()" class="bg-gray-500 text-white px-4 py-2 rounded">End Run</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/quiz_client.js') }}"></script>
+
+<script>
+  // Expose server-provided mode to client-side auto-start.
+  window.SERVER_MODE = "{{ mode|default('') }}";
+</script>
+
+{% endblock %}

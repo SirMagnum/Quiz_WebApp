@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2 class="text-3xl font-bold text-indigo-700 mb-6">Manage Questions</h2>
+
+<!-- Excel Upload -->
+<div class="bg-white p-6 rounded-xl shadow-md mb-10">
+    <h3 class="text-2xl font-semibold mb-4">Bulk Upload via Excel</h3>
+
+    <form action="{{ url_for('teacher.upload_excel') }}" method="post" enctype="multipart/form-data" class="flex items-center gap-4">
+        <input type="file" name="file" accept=".xlsx" class="border px-4 py-2 rounded">
+        <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Upload</button>
+    </form>
+
+    <p class="text-sm text-gray-500 mt-2">
+        Required columns: <strong>Question, Op1, Op2, Op3, Op4, CorrectOp</strong>
+    </p>
+</div>
+
+<!-- MASS DELETE FORM -->
+<form method="post" action="{{ url_for('teacher.mass_delete') }}" id="massDeleteForm">
+
+    <div class="flex items-center gap-4 mb-6">
+        <label class="flex items-center gap-2">
+            <input type="checkbox" id="selectAll" class="w-4 h-4">
+            <span>Select All</span>
+        </label>
+
+        <button type="submit"
+                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                onclick="return confirm('Delete selected questions?');">
+            Delete Selected
+        </button>
+    </div>
+
+    <!-- QUESTION LIST -->
+    <div class="space-y-4">
+        {% for q in questions %}
+        <div class="p-4 bg-white rounded-xl shadow flex items-center gap-4">
+
+            <!-- Checkbox -->
+            <input type="checkbox" name="qids" value="{{ q.id }}" class="w-4 h-4 question-checkbox">
+
+            <div class="flex-1">
+                <p class="font-semibold text-lg">{{ q.prompt }}</p>
+                <p class="text-gray-600 text-sm">
+                    ID: {{ q.id }} · Difficulty: {{ q.difficulty }} · Type: {{ q.qtype }}
+                </p>
+            </div>
+
+            <a href="{{ url_for('teacher.edit_question', qid=q.id) }}"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+                Edit
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</form>
+
+<script>
+document.getElementById("selectAll").addEventListener("change", function() {
+    const checked = this.checked;
+    document.querySelectorAll(".question-checkbox").forEach(cb => cb.checked = checked);
+});
+</script>
+
+{% endblock %}
