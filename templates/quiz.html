@@ -1,45 +1,89 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2 class="text-4xl font-bold text-indigo-700 mb-6">Quiz</h2>
+<div class="max-w-4xl mx-auto space-y-6 fade relative min-h-[80vh] flex flex-col justify-center">
 
-<div class="bg-white p-8 rounded-2xl shadow-lg">
+    <!-- GAME CONTAINER -->
+    <div class="bg-slate-800/60 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl shadow-indigo-900/40 relative">
+        
+        <!-- Decorative Glows -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+        <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-  <div id="modeSelect" class="mb-6">
-    <p class="text-lg mb-2">Choose a mode</p>
-    <div class="flex gap-3 flex-wrap">
-      <button onclick="chooseMode('adaptive')" class="bg-indigo-600 text-white px-4 py-2 rounded">Adaptive</button>
-      <button onclick="chooseMode('challenger')" class="bg-indigo-600 text-white px-4 py-2 rounded">Challenger</button>
-      <button onclick="chooseMode('minuterush')" class="bg-indigo-600 text-white px-4 py-2 rounded">Minute Rush</button>
-      <button onclick="chooseMode('firststrike')" class="bg-indigo-600 text-white px-4 py-2 rounded">First Strike</button>
-      <button onclick="chooseMode('levelinfinity')" class="bg-indigo-600 text-white px-4 py-2 rounded">Level Infinity</button>
+        <div class="p-6 md:p-10 relative z-10">
+            <!-- ACTIVE GAME AREA -->
+            <div id="gameArea" style="display:none" class="space-y-6">
+                
+                <!-- HUD (Heads Up Display) -->
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 p-4 bg-slate-900/50 rounded-2xl border border-white/5">
+                    
+                    <!-- Mode Indicator -->
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-start">
+                        <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-300">
+                            <i data-lucide="gamepad-2" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Mode</div>
+                            <div id="modeName" class="text-white font-bold capitalize font-game text-lg leading-none">Unknown</div>
+                        </div>
+                    </div>
+
+                    <!-- Timer (Center) -->
+                    <div id="timerWrap" class="flex items-center gap-3 px-6 py-2 rounded-xl bg-slate-800 border border-white/10 shadow-inner w-full md:w-auto justify-center">
+                        <i data-lucide="timer" class="w-5 h-5 text-amber-400 animate-pulse"></i>
+                        <div class="font-mono text-2xl font-bold text-white tabular-nums">
+                            <span id="timeLeft">0</span><span class="text-sm text-slate-500 ml-1">s</span>
+                        </div>
+                    </div>
+
+                    <!-- Score -->
+                    <div class="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end">
+                        <div class="text-right">
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Score</div>
+                            <div id="score" class="text-emerald-400 font-bold font-mono text-2xl leading-none drop-shadow-md">0</div>
+                        </div>
+                        <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300">
+                            <i data-lucide="trophy" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QUESTION CARD -->
+                <div class="relative mt-8">
+                    
+                    <!-- Difficulty Badge -->
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
+                        <span id="qDifficulty" class="px-4 py-1 rounded-full bg-slate-800 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider shadow-lg">
+                            Ready Check
+                        </span>
+                    </div>
+
+                    <!-- Question Container -->
+                    <div id="questionBox" class="bg-slate-900/40 border border-white/5 rounded-2xl p-6 md:p-8 pt-10">
+                        <!-- Question Text -->
+                        <div id="question" class="text-xl md:text-2xl font-medium text-white text-center mb-8 leading-relaxed">
+                            Initializing combat sequence...
+                        </div>
+
+                        <!-- Options Grid -->
+                        <div id="options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Options injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Controls -->
+                <div class="flex justify-center pt-4">
+                    <button onclick="endRun()" class="group flex items-center gap-2 text-slate-500 hover:text-red-400 transition-colors px-4 py-2 rounded-lg hover:bg-red-500/10">
+                        <i data-lucide="flag" class="w-4 h-4 group-hover:rotate-12 transition-transform"></i>
+                        <span class="font-bold text-sm uppercase tracking-wide">Surrender / End Run</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
     </div>
-  </div>
-
-  <div id="gameArea" style="display:none">
-    <div class="flex items-center justify-between mb-4">
-      <div>Mode: <strong id="modeName"></strong></div>
-      <div>Score: <strong id="score">0</strong></div>
-    </div>
-
-    <div id="timerWrap" class="mb-4">
-      <span id="timeLabel">Time left:</span> <span id="timeLeft">0</span>s
-    </div>
-
-    <div id="questionMeta" class="mb-3 text-sm text-gray-600">
-      <span id="qDifficulty"></span>
-    </div>
-
-    <div id="questionBox" class="p-6 bg-indigo-50 rounded-lg">
-      <div id="question" class="text-xl font-semibold mb-4"></div>
-      <div id="options" class="space-y-3"></div>
-    </div>
-
-    <div class="mt-4">
-      <button onclick="endRun()" class="bg-gray-500 text-white px-4 py-2 rounded">End Run</button>
-    </div>
-  </div>
-
 </div>
 
 <script src="{{ url_for('static', filename='js/quiz_client.js') }}"></script>
@@ -47,6 +91,66 @@
 <script>
   // Expose server-provided mode to client-side auto-start.
   window.SERVER_MODE = "{{ mode|default('') }}";
+  
+  // Re-initialize icons when game area becomes visible (if needed)
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        if (document.getElementById('gameArea').style.display !== 'none') {
+             if(window.lucide) window.lucide.createIcons();
+        }
+      }
+    });
+  });
+  
+  const gameArea = document.getElementById('gameArea');
+  if(gameArea) {
+      observer.observe(gameArea, { attributes: true });
+  }
 </script>
+
+<!-- STYLES FOR JS-GENERATED BUTTONS -->
+<style>
+    /* Since quiz_client.js creates <button> elements dynamically, 
+       we style them here to ensure they look like the game UI.
+    */
+    #options button {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        background-color: rgba(30, 41, 59, 0.6); /* slate-800/60 */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 0.75rem; /* rounded-xl */
+        color: #e2e8f0; /* slate-200 */
+        font-weight: 500;
+        text-align: left;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    #options button:hover {
+        background-color: #4f46e5; /* indigo-600 */
+        border-color: #818cf8; /* indigo-400 */
+        color: white;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    }
+    
+    #options button:active {
+        transform: translateY(-1px);
+    }
+
+    /* Animation for new questions appearing */
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    #questionBox {
+        animation: slideUpFade 0.4s ease-out;
+    }
+</style>
 
 {% endblock %}

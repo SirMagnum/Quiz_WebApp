@@ -1,87 +1,217 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2 class="text-3xl font-bold text-indigo-700 mb-6">Teacher Analytics</h2>
+<div class="max-w-6xl mx-auto space-y-8 fade">
 
-<div class="bg-white p-6 rounded-xl shadow mb-6">
-  <div id="summary" class="grid grid-cols-2 gap-4"></div>
-</div>
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 font-game drop-shadow-sm flex items-center gap-3">
+                <i data-lucide="pie-chart" class="text-blue-400 w-10 h-10"></i>
+                Tactical Analysis
+            </h1>
+            <p class="text-slate-400 mt-1 text-lg">Global performance metrics and combat intelligence.</p>
+        </div>
+        
+        <div class="flex gap-2">
+            <button onclick="loadAnalytics()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-300 transition-all hover:rotate-180 duration-500 shadow-lg">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="bg-white p-6 rounded-xl shadow">
-    <h3 class="text-xl font-semibold mb-3">Per-mode stats</h3>
-    <table class="w-full text-left text-sm" id="perModeTable">
-      <thead class="text-gray-500">
-        <tr><th>Mode</th><th>Count</th><th>Avg Score</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <!-- SUMMARY CARDS -->
+    <div id="summary" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Loading Placeholders -->
+        <div class="h-32 bg-slate-800/40 rounded-2xl animate-pulse border border-white/5"></div>
+        <div class="h-32 bg-slate-800/40 rounded-2xl animate-pulse border border-white/5"></div>
+    </div>
 
-  <div class="bg-white p-6 rounded-xl shadow">
-    <h3 class="text-xl font-semibold mb-3">Difficulty distribution</h3>
-    <table class="w-full text-left text-sm" id="diffTable">
-      <thead class="text-gray-500"><tr><th>Diff</th><th>Seen</th><th>Acc</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
+    <!-- MAIN DATA GRID -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Per-Mode Stats -->
+        <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col">
+            <div class="p-6 border-b border-white/5 bg-slate-900/30">
+                <h3 class="text-xl font-bold text-white font-game flex items-center gap-2">
+                    <i data-lucide="gamepad-2" class="text-purple-400 w-5 h-5"></i>
+                    Mode Performance
+                </h3>
+            </div>
+            
+            <div class="p-0 overflow-x-auto">
+                <table class="w-full text-left" id="perModeTable">
+                    <thead class="bg-slate-900/50 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5">
+                        <tr>
+                            <th class="px-6 py-4">Simulation Mode</th>
+                            <th class="px-6 py-4">Runs</th>
+                            <th class="px-6 py-4">Avg. XP</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        <!-- JS Injected -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-<div class="bg-white p-6 rounded-xl shadow mt-6">
-  <h3 class="text-xl font-semibold mb-3">Top Questions</h3>
-  <div id="topQuestions"></div>
+        <!-- Difficulty Distribution -->
+        <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-xl flex flex-col">
+            <div class="p-6 border-b border-white/5 bg-slate-900/30">
+                <h3 class="text-xl font-bold text-white font-game flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="text-emerald-400 w-5 h-5"></i>
+                    Difficulty Matrix
+                </h3>
+            </div>
+            
+            <div class="p-0 overflow-x-auto">
+                <table class="w-full text-left" id="diffTable">
+                    <thead class="bg-slate-900/50 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5">
+                        <tr>
+                            <th class="px-6 py-4">Level</th>
+                            <th class="px-6 py-4">Encountered</th>
+                            <th class="px-6 py-4">Success Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5 text-sm">
+                        <!-- JS Injected -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP QUESTIONS INTEL -->
+    <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div class="p-6 border-b border-white/5 bg-slate-900/30">
+            <h3 class="text-xl font-bold text-white font-game flex items-center gap-2">
+                <i data-lucide="file-warning" class="text-yellow-400 w-5 h-5"></i>
+                High-Priority Intel (Most Frequent)
+            </h3>
+        </div>
+        <div id="topQuestions" class="p-6 space-y-4">
+             <!-- JS Injected -->
+        </div>
+    </div>
+
 </div>
 
 <script>
 async function loadAnalytics() {
-  const res = await fetch("/teacher/analytics");
-  if (!res.ok) {
-    document.getElementById("summary").innerText = "Failed to load analytics.";
-    return;
+  const summaryEl = document.getElementById("summary");
+  
+  try {
+      const res = await fetch("/teacher/analytics");
+      if (!res.ok) {
+        summaryEl.innerHTML = `<div class="col-span-2 text-center text-red-400 p-4 border border-red-500/20 bg-red-500/10 rounded-xl">Error: Failed to retrieve intelligence report.</div>`;
+        return;
+      }
+      const js = await res.json();
+
+      // 1. Summary Cards with Gamified Styles
+      summaryEl.innerHTML = `
+        <div class="bg-slate-800/60 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-indigo-500/30 transition-all">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl group-hover:bg-indigo-500/20 transition-all"></div>
+            <div class="relative z-10 flex items-center gap-4">
+                <div class="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 shadow-lg shadow-indigo-900/20">
+                    <i data-lucide="swords" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Attempts</div>
+                    <div class="text-4xl font-bold text-white font-game">${js.total_attempts}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-slate-800/60 backdrop-blur-md border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
+            <div class="relative z-10 flex items-center gap-4">
+                <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 shadow-lg shadow-emerald-900/20">
+                    <i data-lucide="target" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Global Avg. XP</div>
+                    <div class="text-4xl font-bold text-white font-game">${js.avg_score}</div>
+                </div>
+            </div>
+        </div>
+      `;
+
+      // 2. Per Mode Table
+      const ptbody = document.querySelector("#perModeTable tbody");
+      if (js.per_mode && js.per_mode.length > 0) {
+          ptbody.innerHTML = js.per_mode.map(m => `
+            <tr class="hover:bg-white/5 transition-colors group">
+              <td class="px-6 py-4 font-bold text-slate-300 capitalize flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 group-hover:bg-indigo-400 transition-colors"></span>
+                ${m.mode}
+              </td>
+              <td class="px-6 py-4 text-slate-400 font-mono">${m.count}</td>
+              <td class="px-6 py-4 text-emerald-400 font-mono font-bold">${m.avg}</td>
+            </tr>
+          `).join("");
+      } else {
+          ptbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-slate-500">No combat data available.</td></tr>`;
+      }
+
+      // 3. Difficulty Table
+      const dtbody = document.querySelector("#diffTable tbody");
+      if (js.diff_list && js.diff_list.length > 0) {
+          dtbody.innerHTML = js.diff_list.map(d => {
+            // Color code accuracy
+            let accColor = "text-slate-400";
+            if(d.accuracy !== null) {
+                if(d.accuracy >= 70) accColor = "text-emerald-400";
+                else if(d.accuracy >= 40) accColor = "text-yellow-400";
+                else accColor = "text-red-400";
+            }
+            
+            return `
+            <tr class="hover:bg-white/5 transition-colors">
+              <td class="px-6 py-4">
+                <span class="px-2 py-1 rounded bg-slate-700/50 border border-white/5 text-xs font-bold text-white">Lvl ${d.difficulty}</span>
+              </td>
+              <td class="px-6 py-4 text-slate-400 font-mono">${d.seen}</td>
+              <td class="px-6 py-4 font-mono font-bold ${accColor}">
+                ${d.accuracy === null ? "—" : d.accuracy + "%"}
+              </td>
+            </tr>
+          `}).join("");
+      } else {
+          dtbody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-slate-500">No difficulty data available.</td></tr>`;
+      }
+
+      // 4. Top Questions
+      const top = document.getElementById("topQuestions");
+      if (js.top_questions && js.top_questions.length > 0) {
+          top.innerHTML = js.top_questions.map(q => `
+            <div class="p-4 bg-slate-900/50 rounded-xl border border-white/5 hover:border-indigo-500/30 transition-all group">
+              <div class="flex justify-between items-start mb-2">
+                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-800 px-2 py-1 rounded border border-white/5">ID: ${q.qid}</span>
+                 <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-slate-400">Seen: <strong class="text-white">${q.seen}</strong></span>
+                    <span class="${q.accuracy >= 50 ? 'text-emerald-400' : 'text-red-400'}">Acc: <strong>${q.accuracy}%</strong></span>
+                 </div>
+              </div>
+              <div class="font-medium text-slate-200 group-hover:text-white transition-colors">
+                 ${q.prompt}
+              </div>
+              <div class="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                 <i data-lucide="zap" class="w-3 h-3"></i> Difficulty: ${q.difficulty}
+              </div>
+            </div>
+          `).join("");
+      } else {
+          top.innerHTML = `<div class="text-center text-slate-500 py-4">No data on specific encounters.</div>`;
+      }
+
+      // Re-initialize icons
+      if(window.lucide) window.lucide.createIcons();
+
+  } catch (err) {
+      console.error(err);
+      summaryEl.innerHTML = `<div class="col-span-2 text-center text-red-400">System Error: Connection severed.</div>`;
   }
-  const js = await res.json();
-
-  // Summary
-  const summary = document.getElementById("summary");
-  summary.innerHTML = `
-    <div class="p-4 border rounded">
-      <div class="text-sm text-gray-500">Total Attempts</div>
-      <div class="text-2xl font-bold">${js.total_attempts}</div>
-    </div>
-    <div class="p-4 border rounded">
-      <div class="text-sm text-gray-500">Avg Score</div>
-      <div class="text-2xl font-bold">${js.avg_score}</div>
-    </div>
-  `;
-
-  // per mode
-  const ptbody = document.querySelector("#perModeTable tbody");
-  ptbody.innerHTML = js.per_mode.map(m => `
-    <tr>
-      <td>${m.mode}</td>
-      <td>${m.count}</td>
-      <td>${m.avg}</td>
-    </tr>
-  `).join("");
-
-  // difficulty
-  const dtbody = document.querySelector("#diffTable tbody");
-  dtbody.innerHTML = js.diff_list.map(d => `
-    <tr>
-      <td>${d.difficulty}</td>
-      <td>${d.seen}</td>
-      <td>${d.accuracy === null ? "—" : d.accuracy + "%"}</td>
-    </tr>
-  `).join("");
-
-  // top questions
-  const top = document.getElementById("topQuestions");
-  top.innerHTML = js.top_questions.map(q => `
-    <div class="p-3 border rounded mb-2">
-      <div class="font-semibold">[${q.qid}] ${q.prompt}</div>
-      <div class="text-sm text-gray-500">Seen: ${q.seen} · Accuracy: ${q.accuracy}% · Difficulty: ${q.difficulty}</div>
-    </div>
-  `).join("");
 }
 
 document.addEventListener("DOMContentLoaded", loadAnalytics);

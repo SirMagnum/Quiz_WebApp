@@ -1,23 +1,72 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div class="flex justify-center mt-20 fade w-full">
-    <div class="bg-white shadow-xl rounded-xl p-10 w-96">
-        <h2 class="text-3xl font-bold mb-6 text-center text-indigo-600">Login</h2>
+<div class="min-h-[80vh] flex items-center justify-center fade relative">
+    
+    <!-- Background Decor (Optional glow behind the card) -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-[100px] pointer-events-none"></div>
 
-        <form method="post" class="space-y-5">
-            <input name="username" placeholder="Username"
-                class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+    <!-- LOGIN CARD -->
+    <div class="w-full max-w-md bg-slate-800/40 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl relative overflow-hidden z-10 group">
+        
+        <!-- Animated border effect on hover -->
+        <div class="absolute inset-0 border-2 border-transparent group-hover:border-white/5 rounded-2xl transition-colors pointer-events-none"></div>
 
-            <input name="password" type="password" placeholder="Password"
-                class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/30 mb-4 animate-bounce-slow">
+                <i data-lucide="gamepad-2" class="w-8 h-8 text-white"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-white font-game tracking-wide">Player Login</h2>
+            <p class="text-slate-400 text-sm mt-2">Enter your credentials to continue your quest.</p>
+        </div>
 
-            <button 
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold shadow">
-                Login
+        <!-- Form -->
+        <form method="post" class="space-y-6">
+            
+            <!-- Username Field -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Username</label>
+                <div class="relative group/input">
+                    <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within/input:text-indigo-400 transition-colors"></i>
+                    <input name="username" placeholder="Codename" required autofocus
+                        class="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all placeholder-slate-600 shadow-inner">
+                </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Password</label>
+                <div class="relative group/input">
+                    <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within/input:text-purple-400 transition-colors"></i>
+                    <input name="password" type="password" placeholder="••••••••" required
+                        class="w-full pl-12 pr-4 py-3 bg-slate-950/50 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all placeholder-slate-600 shadow-inner">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/25 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 mt-2">
+                <span>Enter World</span>
+                <i data-lucide="arrow-right" class="w-5 h-5"></i>
             </button>
         </form>
+        
+        <!-- Decorative footer -->
+        <div class="mt-6 text-center border-t border-white/5 pt-4">
+            <p class="text-xs text-slate-500">Guild Access Only • Secure Connection</p>
+        </div>
     </div>
 </div>
+
+<style>
+    /* Subtle bounce animation for the logo */
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(-3%); }
+        50% { transform: translateY(3%); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s infinite ease-in-out;
+    }
+</style>
 
 {% endblock %}

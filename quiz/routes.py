@@ -1,6 +1,5 @@
-# quiz/routes.py
 from flask import (
-    render_template, request, jsonify, redirect, url_for, abort, flash
+    render_template, request, jsonify, redirect, url_for, abort, flash, current_app
 )
 from flask_login import login_required, current_user
 from extensions import db
@@ -8,10 +7,7 @@ from models import Question, Attempt, User
 from . import quiz_bp
 import random, json
 from datetime import datetime
-
-
-# New modular mode import
-from quiz.modes import get_question_for_mode
+import importlib
 
 # -------------------------------
 # STUDENT: Quiz Start Page (Modes Gallery)
@@ -37,7 +33,7 @@ def start_mode(mode):
 @quiz_bp.route("/run/<mode>")
 @login_required
 def run_quiz(mode):
-    # legacy route kept for compatibility; render quiz page with mode
+    # legacy route kept for compatibility
     return render_template("quiz.html", mode=mode)
 
 # -------------------------------
@@ -50,11 +46,18 @@ def start_attempt():
     mode = data.get("mode", "adaptive")
     params = data.get("params", {})
 
+    # Initialize details with metadata about the run (e.g., time limit)
+    initial_log = [{
+        "action": "start",
+        "params": params,
+        "timestamp": datetime.utcnow().isoformat()
+    }]
+
     attempt = Attempt(
         user_id=current_user.id,
         mode=mode,
         score=0,
-        details=json.dumps([])
+        details=json.dumps(initial_log)
     )
     db.session.add(attempt)
     db.session.commit()
@@ -62,10 +65,8 @@ def start_attempt():
     return jsonify({"attempt_id": attempt.id})
 
 # -------------------------------
-# API: Get Next Question (updated to signal finished)
+# API: Get Next Question
 # -------------------------------
-# Replace the existing get_question route in quiz/routes.py with this:
-
 @quiz_bp.route("/api/get_question", methods=["POST"])
 @login_required
 def get_question():
@@ -79,25 +80,24 @@ def get_question():
     if attempt_id and not attempt:
         return jsonify({"error": "invalid attempt_id"}), 400
 
-    # normalize current_diff
+    # Normalize current_diff
     try:
         current_diff = int(state.get("current_diff", 3))
     except Exception:
         current_diff = 3
 
-    # normalize seen_qids -> list of ints
+    # Normalize seen_qids -> list of ints
     seen_raw = state.get("seen_qids", []) or []
     seen = []
     try:
         for v in seen_raw:
-            if v is None:
-                continue
-            seen.append(int(v))
+            if v is not None:
+                seen.append(int(v))
     except Exception:
         # fallback: best-effort conversion
         seen = [int(x) for x in seen_raw if isinstance(x, (int, str)) and str(x).isdigit()]
 
-    # incorporate last_outcome into seen immediately (so server-side decisions use it)
+    # Incorporate last_outcome into seen immediately
     if last_outcome and last_outcome.get("qid") is not None:
         try:
             qid_val = int(last_outcome.get("qid"))
@@ -106,38 +106,40 @@ def get_question():
         except Exception:
             pass
 
-    # quick sanity: if we've seen all questions -> finished
+    # Quick sanity: if we've seen all questions -> finished
     total_q_count = Question.query.count()
     if total_q_count == 0:
-        return jsonify({"finished": True, "message": "No questions in the database.", "attempt_id": attempt.id if attempt else None})
+        return jsonify({"finished": True, "message": "No questions in database.", "attempt_id": attempt.id if attempt else None})
 
-    # if client reports seen covers all DB questions, finish
     if len(seen) >= total_q_count:
         return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
 
-    # Ask the mode dispatcher for a question (modes should accept the seen list)
-    # but ensure final result is not in seen; if it is, fall back to strict exclusion pool.
+    # --- MODE DISPATCHER ---
+    # Try to load quiz/modes/<mode>.py -> get_question(diff, seen)
+    # If not found, fallback to random strict exclusion
     q = None
     try:
-        q = get_question_for_mode(mode, current_diff, seen)
-    except Exception:
-        q = None
+        module_name = f"quiz.modes.{mode}"
+        mod = importlib.import_module(module_name)
+        if hasattr(mod, "get_question"):
+            q = mod.get_question(current_diff, seen)
+    except ImportError:
+        pass # Mode module not found, use fallback
+    except Exception as e:
+        current_app.logger.error(f"Error in mode {mode} get_question: {e}")
 
-    # If dispatcher returned a question already seen (or None), pick from a strict pool
+    # Fallback: strict pool excluding seen
     if (not q) or (getattr(q, "id", None) in seen):
-        # build strict pool excluding seen
         pool = [qq for qq in Question.query.all() if qq.id not in seen]
         if not pool:
-            # nothing left
             return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
-        import random
         q = random.choice(pool)
 
-    # final guard (shouldn't happen) — if q still None, report finished
+    # Final guard
     if not q:
         return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
 
-    # Return question payload and server-side state (ensure seen_qids are ints)
+    # Return payload
     return jsonify({
         "id": q.id,
         "prompt": q.prompt,
@@ -149,23 +151,18 @@ def get_question():
 
 
 # -------------------------------
-# API: Submit Answer (robust)
+# API: Submit Answer (Robust Logic)
 # -------------------------------
 @quiz_bp.route("/api/submit_answer", methods=["POST"])
 @login_required
 def submit_answer():
-    import importlib
-    import logging
-    logger = logging.getLogger(__name__)
-
     body = request.get_json() or {}
     attempt_id = body.get("attempt_id")
     qid = body.get("question_id")
     selected = body.get("selected")
     mode = (body.get("mode") or "").lower()
     time_used = body.get("time_used")
-    state = body.get("state", {}) or {}
-
+    
     attempt = Attempt.query.get(attempt_id)
     if not attempt:
         return jsonify({"error": "invalid attempt_id"}), 400
@@ -174,7 +171,7 @@ def submit_answer():
     if not q:
         return jsonify({"error": "question not found"}), 404
 
-    # Normalize selected -> list of strings (canonical: ids as strings)
+    # 1. Normalize selection to list of strings
     try:
         if isinstance(selected, list):
             sel = [str(x).strip() for x in selected if x is not None]
@@ -183,153 +180,124 @@ def submit_answer():
     except Exception:
         sel = []
 
-    # Build option map id -> text from q.options_json
+    # 2. Build Maps from Option ID <-> Text
     try:
         opts = json.loads(q.options_json) if q.options_json else []
-    except Exception:
-        opts = []
+    except: opts = []
+    
     opt_id_to_text = {}
     opt_text_to_id = {}
     for o in opts:
         oid = str(o.get("id")).strip()
         text = str(o.get("text") or "").strip()
         opt_id_to_text[oid] = text
-        # for text lookup, use lowercase trimmed text
         opt_text_to_id[text.lower()] = oid
 
-    # Normalise correct answers from DB (raw)
+    # 3. Normalize Correct Answer from DB
     raw_correct = []
     if q.correct_answers:
         try:
-            raw_correct = [str(x).strip() for x in q.correct_answers.split(",") if x is not None]
-        except Exception:
+            raw_correct = [str(x).strip() for x in q.correct_answers.split(",") if x]
+        except:
             raw_correct = [str(q.correct_answers).strip()]
 
-    # Try to map raw_correct entries to canonical option IDs when possible.
+    # 4. Map raw_correct to Canonical Option IDs (Smart Match)
     mapped_correct_ids = set()
     for entry in raw_correct:
-        if not entry:
-            continue
         e = entry.strip()
-        # If entry is exactly an option id
+        # Direct ID match?
         if e in opt_id_to_text:
             mapped_correct_ids.add(e)
             continue
-        # If entry matches option text (case-insensitive)
+        # Text match?
         lookup = e.lower()
         if lookup in opt_text_to_id:
             mapped_correct_ids.add(opt_text_to_id[lookup])
             continue
-        # If entry is numeric-looking, coerce and test
+        # Numeric fallback?
         try:
             if str(int(e)) in opt_id_to_text:
                 mapped_correct_ids.add(str(int(e)))
                 continue
-        except Exception:
-            pass
-        # Fallback: if entry doesn't match an id/text, keep the raw entry in mapped_correct_ids
-        # (so we can compare against selected text if client sent text)
+        except: pass
+        # Fallback: treat as raw text
         mapped_correct_ids.add(e)
 
-    # Also try to coerce selected entries to canonical IDs if user sent texts
+    # 5. Normalize User Selection to Canonical IDs
     selected_ids = set()
     selected_texts = set()
     for s in sel:
         if s in opt_id_to_text:
             selected_ids.add(s)
         else:
-            # check if matches option text
             s_lookup = s.strip().lower()
             if s_lookup in opt_text_to_id:
                 selected_ids.add(opt_text_to_id[s_lookup])
             else:
-                # treat as raw text selection
                 selected_texts.add(s_lookup)
 
-    # Decide correctness robustly
+    # 6. Determine Correctness
     correct = False
     if q.qtype == "multiple":
-        # For multiple, require exact set equality of canonical ids if possible.
-        # If mapped_correct_ids contain ids (i.e., exist in opt_id_to_text), compare ids.
+        # Multiple: Set equality on IDs (strict)
         ids_in_mapped = {m for m in mapped_correct_ids if m in opt_id_to_text}
         if ids_in_mapped:
-            # require exact match between ids
             correct = (ids_in_mapped == selected_ids)
         else:
-            # fallback: compare by text strings (lowercased)
+            # Fallback: compare text sets
             mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
             correct = (mapped_texts == selected_texts)
     else:
-        # single question: accept if any canonical id matches, or text matches
+        # Single: If ANY selected ID matches ANY correct ID
         if len(selected_ids) == 1:
-            # single id selected
             sel_id = next(iter(selected_ids))
-            # if mapped_correct_ids has ids, check membership
             ids_in_mapped = {m for m in mapped_correct_ids if m in opt_id_to_text}
             if ids_in_mapped:
                 correct = (sel_id in ids_in_mapped)
             else:
-                # fallback: compare text
+                # Fallback text check
                 sel_text = opt_id_to_text.get(sel_id, "").strip().lower()
                 mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
                 correct = (sel_text in mapped_texts)
         elif len(selected_texts) == 1:
-            # no id selected but raw text present
             st = next(iter(selected_texts))
             mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
             correct = (st in mapped_texts)
         else:
             correct = False
 
-    # Log the comparison details for debugging
-    try:
-        logger.info(
-            "submit_answer: user=%s attempt=%s qid=%s qtype=%s raw_correct=%s mapped_correct_ids=%s selected_ids=%s selected_texts=%s -> correct=%s",
-            getattr(attempt, "user_id", None),
-            getattr(attempt, "id", None),
-            getattr(q, "id", None),
-            getattr(q, "qtype", None),
-            raw_correct,
-            list(mapped_correct_ids),
-            list(selected_ids),
-            list(selected_texts),
-            bool(correct)
-        )
-    except Exception:
-        logger.exception("submit_answer logging failed")
-
-    # Default points
+    # 7. Scoring & Mode Handling
     points = 1 if correct else 0
     adjustment = {}
 
-    # Try to call mode-specific handler dynamically: quiz.modes.<mode>.handle_result
     if mode:
         module_name = f"quiz.modes.{mode}"
         try:
             mod = importlib.import_module(module_name)
             if hasattr(mod, "handle_result"):
-                try:
-                    res = mod.handle_result(attempt, q, bool(correct), time_used=time_used)
-                    if isinstance(res, tuple) and len(res) >= 1:
-                        points = int(res[0]) if res[0] is not None else points
-                        if len(res) > 1 and isinstance(res[1], dict):
-                            adjustment = res[1]
-                except Exception:
-                    logger.exception("mode.handle_result failed for mode=%s", mode)
-            else:
-                logger.debug("No handle_result in module %s — using default scoring", module_name)
+                res = mod.handle_result(attempt, q, bool(correct), time_used=time_used)
+                if isinstance(res, tuple) and len(res) >= 1:
+                    points = int(res[0]) if res[0] is not None else points
+                    if len(res) > 1 and isinstance(res[1], dict):
+                        adjustment = res[1]
         except ModuleNotFoundError:
-            logger.debug("No mode module found for %s — using default scoring", module_name)
-        except Exception:
-            logger.exception("Unexpected error importing mode module %s", module_name)
+            pass # Default scoring
+        except Exception as e:
+            current_app.logger.error(f"Mode {mode} error: {e}")
 
-    # Apply points to attempt
+    # Update Attempt
     try:
         attempt.score = (attempt.score or 0) + int(points)
-    except Exception:
+    except:
         attempt.score = (attempt.score or 0) + (1 if correct else 0)
 
-    # Record event
+    # 8. Log Event
+    try:
+        # Load existing details to append
+        details_list = json.loads(attempt.details) if attempt.details else []
+    except:
+        details_list = []
+
     event = {
         "qid": q.id,
         "selected": sel,
@@ -338,12 +306,13 @@ def submit_answer():
         "difficulty": q.difficulty,
         "timestamp": datetime.utcnow().isoformat()
     }
-    attempt.add_event(event)
-    attempt.ended_at = datetime.utcnow()
+    details_list.append(event)
+    attempt.details = json.dumps(details_list)
+    attempt.ended_at = datetime.utcnow() # update timestamp on every move
 
     db.session.commit()
 
-    # Provide fallback adjustment for adaptive if handler didn't return one
+    # Fallback adjustment for Adaptive if mode module missing
     if not adjustment and mode == "adaptive":
         adjustment = {
             "next_diff": min(10, q.difficulty + 1) if correct else max(1, q.difficulty - 1),
@@ -378,55 +347,53 @@ def end_attempt():
 
 
 # -------------------------------
-# RESULTS PAGE (compute totals & percent)
+# RESULTS PAGE
 # -------------------------------
 @quiz_bp.route("/results/<int:attempt_id>")
 @login_required
 def results(attempt_id):
     a = Attempt.query.get_or_404(attempt_id)
 
-    # Student can't see other students' results
-    if a.user_id != current_user.id and current_user.role.value != "teacher":
+    if a.user_id != current_user.id and getattr(current_user.role, "value", None) != "teacher":
         abort(403)
 
     try:
         details = json.loads(a.details) if a.details else []
+        # Filter out metadata events (like "start") that don't have QIDs
+        game_events = [d for d in details if d.get("qid")]
     except Exception:
         details = []
+        game_events = []
 
-    # compute totals (total questions = number of recorded events; use unique qids if you prefer dedup)
-    total_questions = len(details)
+    total_questions = len(game_events)
     correct_count = a.score or 0
-
-    # Protect against division by zero
+    
     percentage = None
     if total_questions > 0:
-        try:
-            percentage = round((correct_count / total_questions) * 100, 2)
-        except Exception:
-            percentage = None
+        # Calculate purely based on correct/total for simple display
+        # (This might differ from 'score' if score includes bonus points)
+        raw_correct = sum(1 for d in game_events if d.get("correct"))
+        percentage = round((raw_correct / total_questions) * 100, 1)
 
-    return render_template("results.html", attempt=a, details=details,
-                           total_questions=total_questions, percentage=percentage, correct_count=correct_count)
+    return render_template("results.html", 
+                           attempt=a, 
+                           details=game_events,
+                           total_questions=total_questions, 
+                           percentage=percentage, 
+                           correct_count=correct_count)
 
 
 # -------------------------------
-# STUDENT / TEACHER ATTEMPTS VIEW
+# VIEWS: Student Profile & Attempts
 # -------------------------------
 @quiz_bp.route("/my_attempts")
 @login_required
 def my_attempts():
-    if current_user.role.value == "teacher":
-        attempts = Attempt.query.order_by(Attempt.started_at.desc()).all()
-        users = {u.id: u.username for u in User.query.all()}
-        return render_template("my_attempts.html", attempts=attempts, user_cache=users)
-
+    # If teacher, show all? Or just their own? Usually teachers have their own profile too.
+    # If they want to see student attempts, they use the dashboard.
     attempts = Attempt.query.filter_by(user_id=current_user.id).order_by(Attempt.started_at.desc()).all()
     return render_template("my_attempts.html", attempts=attempts, user_cache={})
 
-# -------------------------------
-# STUDENT PROFILE PAGE
-# -------------------------------
 @quiz_bp.route("/profile")
 @login_required
 def profile():
@@ -434,13 +401,10 @@ def profile():
     attempts = Attempt.query.filter_by(user_id=user_id).order_by(Attempt.started_at.desc()).all()
 
     total_attempts = len(attempts)
-    avg_score = None
-    best_score = None
-
-    if total_attempts:
-        scores = [a.score or 0 for a in attempts]
-        avg_score = sum(scores) / len(scores)
-        best_score = max(scores)
+    scores = [a.score or 0 for a in attempts]
+    
+    avg_score = sum(scores) / len(scores) if scores else 0
+    best_score = max(scores) if scores else 0
 
     mode_stats = {}
     for a in attempts:

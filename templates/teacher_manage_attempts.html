@@ -1,186 +1,288 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!--
-  Full teacher_manage_attempts.html
-  - Clicking anywhere on the row toggles the checkbox (native <label> behavior)
-  - "Select All", "Delete Selected", and "Delete All" supported
-  - Row highlights on hover and when selected
-  - View / Delete buttons won't toggle selection
--->
-
 <style>
-/* Row visuals */
-.attempt-row {
-  transition: background 0.15s, transform 0.08s;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.attempt-row:hover { background: #f3f4f6; }
-.attempt-row:active { transform: scale(0.995); }
-.attempt-row.selected { background: #eef2ff; }
-
-/* ensure label spans full width for native toggle */
-.attempt-label {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-  cursor: pointer;
-}
-
-/* checkbox look & hit area */
+/* Custom Checkbox for Dark Theme */
 .attempt-checkbox {
-  cursor: pointer;
-  z-index: 2;
-  flex: 0 0 auto;
+    appearance: none;
+    background-color: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: grid;
+    place-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.attempt-checkbox::before {
+    content: "";
+    width: 0.75rem;
+    height: 0.75rem;
+    transform: scale(0);
+    transition: 0.15s transform ease-in-out;
+    box-shadow: inset 1em 1em #818cf8; /* Indigo-400 */
+    border-radius: 2px;
+}
+.attempt-checkbox:checked {
+    border-color: #818cf8;
+    background-color: rgba(99, 102, 241, 0.1);
+}
+.attempt-checkbox:checked::before {
+    transform: scale(1);
 }
 
-/* right-side actions shouldn't cause row toggle */
-.attempt-actions { flex: 0 0 auto; margin-left: 1rem; }
+/* Row Visuals */
+.attempt-row {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.attempt-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+}
+.attempt-row.selected {
+    background: rgba(99, 102, 241, 0.15) !important; /* Indigo tint */
+    border-color: rgba(99, 102, 241, 0.4) !important;
+}
 
-/* responsive small tweaks */
-@media (max-width: 640px) {
-  .attempt-actions { display: flex; gap: .5rem; }
-  .attempt-row { padding: .75rem; }
+/* Label logic */
+.attempt-label {
+    cursor: pointer;
+    user-select: none;
 }
 </style>
 
-<h2 class="text-3xl font-bold text-indigo-700 mb-6">Manage Attempts</h2>
+<div class="max-w-6xl mx-auto space-y-8 fade">
 
-<div class="bg-white p-6 rounded-xl shadow mb-6">
-  <p class="text-sm text-gray-600">
-    Click any row to select it. Use "Delete Selected" to remove chosen attempts or "Delete All" to wipe this student's attempts.
-  </p>
-</div>
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 font-game drop-shadow-sm flex items-center gap-3">
+                <i data-lucide="shield-alert" class="text-red-400 w-10 h-10"></i>
+                Attempt Control
+            </h1>
+            <p class="text-slate-400 mt-1 text-lg">Administrative oversight of combat logs.</p>
+        </div>
+        
+        <!-- Contextual Help -->
+        <div class="px-4 py-2 rounded-xl bg-slate-800/50 border border-white/5 flex items-center gap-2">
+            <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-slate-500"></i>
+            <span class="text-xs text-slate-400">Click rows to select • Batch actions available</span>
+        </div>
+    </div>
 
 {% if filtered_student %}
-  <!-- Filtered student view -->
-  <div class="mb-4 flex items-center justify-between">
-    <div>
-      <h3 class="text-xl font-semibold">Attempts — {{ filtered_student.username }}</h3>
-      <div class="text-sm text-gray-500">Showing attempts only for this student.</div>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <form method="post"
-            action="{{ url_for('teacher.delete_student_attempts', uid=filtered_student.id) }}"
-            onsubmit="return confirm('Delete ALL attempts for {{ filtered_student.username }}? This is permanent.');">
-        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
-          Delete All Attempts
-        </button>
-      </form>
-
-      <a href="{{ url_for('teacher.manage_attempts') }}" class="text-sm text-gray-600 hover:underline">Back to Students</a>
-    </div>
-  </div>
-
-  {% if attempts %}
-    <form method="post" action="{{ url_for('teacher.mass_delete_attempts') }}" id="massDeleteAttemptsForm">
-      <div class="flex items-center gap-4 mb-4">
-        <label class="flex items-center gap-2">
-          <input type="checkbox" id="selectAllAttempts" class="w-4 h-4">
-          <span>Select All</span>
-        </label>
-
-        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                onclick="return confirmMassDelete()">
-          Delete Selected
-        </button>
-
-        <input type="hidden" name="confirm_bulk" id="confirmBulkField" value="">
-      </div>
-
-      <div class="space-y-3">
-        {% for a in attempts %}
-          <div class="attempt-row p-3 rounded-lg border">
-            <!-- Use label to cover the whole left area (native click toggles checkbox) -->
-            <label class="attempt-label" for="chk{{ a.id }}">
-              <input id="chk{{ a.id }}" type="checkbox" name="aids" value="{{ a.id }}" class="attempt-checkbox w-4 h-4">
-
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold truncate">Attempt #{{ a.id }} — {{ a.mode | capitalize }} — Score: {{ a.score }}</div>
-                <div class="text-sm text-gray-600 truncate">Started: {{ a.started_at }} · Ended: {{ a.ended_at or '—' }}</div>
-              </div>
-            </label>
-
-            <div class="attempt-actions flex items-center gap-3">
-              <a href="{{ url_for('quiz.results', attempt_id=a.id) }}"
-                 class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded"
-                 onclick="event.stopPropagation();">
-                View
-              </a>
-
-              <form method="post" action="{{ url_for('teacher.delete_attempt', aid=a.id) }}" style="display:inline"
-                    onsubmit="event.stopPropagation(); return confirm('Delete attempt #{{ a.id }}? This is permanent.');">
-                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
-              </form>
+    <!-- === STUDENT VIEW: LIST OF ATTEMPTS === -->
+    
+    <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
+        
+        <!-- Toolbar -->
+        <div class="p-6 border-b border-white/5 bg-slate-900/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+                <h2 class="text-xl font-bold text-white font-game flex items-center gap-2">
+                    <span class="text-slate-400">Logs for:</span> 
+                    <span class="text-indigo-400">{{ filtered_student.username }}</span>
+                </h2>
             </div>
-          </div>
-        {% endfor %}
-      </div>
-    </form>
-  {% else %}
-    <p class="text-gray-600">No attempts found for this student.</p>
-  {% endif %}
+
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('teacher.manage_attempts') }}" 
+                   class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-all text-sm font-bold flex items-center gap-2">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back
+                </a>
+                
+                <form method="post" action="{{ url_for('teacher.delete_student_attempts', uid=filtered_student.id) }}"
+                      onsubmit="return confirm('WARNING: This will wipe ALL combat records for {{ filtered_student.username }}. This action cannot be undone.');">
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 transition-all text-sm font-bold flex items-center gap-2 group">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i> 
+                        <span>Wipe All Logs</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-6">
+            {% if attempts %}
+            <form method="post" action="{{ url_for('teacher.mass_delete_attempts') }}" id="massDeleteAttemptsForm">
+                
+                <!-- Batch Actions Bar -->
+                <div class="flex items-center gap-4 mb-4 p-3 rounded-xl bg-slate-900/50 border border-white/5">
+                    <label class="flex items-center gap-3 cursor-pointer group hover:text-white text-slate-400 transition-colors">
+                        <input type="checkbox" id="selectAllAttempts" class="attempt-checkbox">
+                        <span class="text-sm font-bold uppercase tracking-wider">Select All</span>
+                    </label>
+
+                    <div class="h-6 w-px bg-white/10"></div>
+
+                    <button type="submit" class="text-sm font-bold text-red-400 hover:text-red-300 flex items-center gap-2 transition-colors disabled:opacity-50"
+                            onclick="return confirmMassDelete()">
+                        <i data-lucide="trash" class="w-4 h-4"></i>
+                        Delete Selected
+                    </button>
+
+                    <input type="hidden" name="confirm_bulk" id="confirmBulkField" value="">
+                </div>
+
+                <!-- Attempts List -->
+                <div class="space-y-2">
+                    {% for a in attempts %}
+                    <div class="attempt-row rounded-xl p-0 relative group overflow-hidden bg-slate-800/30">
+                        
+                        <!-- Clickable Label Wrapper -->
+                        <label class="attempt-label flex items-center gap-4 p-4 w-full h-full" for="chk{{ a.id }}">
+                            
+                            <!-- Checkbox -->
+                            <input id="chk{{ a.id }}" type="checkbox" name="aids" value="{{ a.id }}" class="attempt-checkbox flex-shrink-0">
+
+                            <!-- Info -->
+                            <div class="flex-grow min-w-0 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                
+                                <!-- ID & Mode -->
+                                <div class="flex items-center gap-3">
+                                    <span class="text-xs font-mono text-slate-500">#{{ a.id }}</span>
+                                    <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide border
+                                        {% if a.mode == 'adaptive' %} bg-indigo-500/10 text-indigo-400 border-indigo-500/20
+                                        {% elif a.mode == 'challenger' %} bg-orange-500/10 text-orange-400 border-orange-500/20
+                                        {% elif a.mode == 'minuterush' %} bg-emerald-500/10 text-emerald-400 border-emerald-500/20
+                                        {% elif a.mode == 'firststrike' %} bg-red-500/10 text-red-400 border-red-500/20
+                                        {% else %} bg-slate-700/50 text-slate-400 border-white/10 {% endif %}">
+                                        {{ a.mode }}
+                                    </span>
+                                </div>
+
+                                <!-- Score -->
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 text-xs uppercase font-bold">Score:</span>
+                                    <span class="text-emerald-400 font-game text-lg">{{ a.score }}</span>
+                                </div>
+
+                                <!-- Date -->
+                                <div class="text-xs text-slate-500 font-mono text-right md:text-left">
+                                    {{ a.started_at }}
+                                </div>
+                            </div>
+                        </label>
+
+                        <!-- Actions (Separate from Label click) -->
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pl-4 border-l border-white/5 bg-slate-800/0 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+                            <a href="{{ url_for('quiz.results', attempt_id=a.id) }}"
+                               onclick="event.stopPropagation();"
+                               class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
+                               title="View Report">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </a>
+
+                            <form method="post" action="{{ url_for('teacher.delete_attempt', aid=a.id) }}" class="inline-block"
+                                  onsubmit="event.stopPropagation(); return confirm('Delete attempt #{{ a.id }}? This cannot be undone.');">
+                                <button type="submit" 
+                                        class="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                                        title="Delete Single Attempt">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+            </form>
+            {% else %}
+            <div class="text-center py-12 text-slate-500 flex flex-col items-center">
+                <i data-lucide="file-x" class="w-12 h-12 mb-3 opacity-50"></i>
+                <p>No records found for this operative.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
 {% else %}
-  <!-- Default: student list (summary) -->
-  <div class="bg-white p-4 rounded-lg shadow space-y-3">
-    {% if students %}
-      {% for s in students %}
-        <div class="flex items-center justify-between border-b py-3">
-          <div>
-            <div class="font-semibold">{{ s.username }}</div>
-            <div class="text-sm text-gray-500">Attempts: {{ counts_map.get(s.id, 0) }}</div>
-          </div>
+    <!-- === DEFAULT VIEW: STUDENT LIST === -->
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% if students %}
+            {% for s in students %}
+            {% if s.role.value != 'teacher' %}
+            <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl p-6 relative group hover:border-indigo-500/30 transition-all shadow-xl">
+                
+                <!-- Hover Glow -->
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/0 to-purple-500/0 group-hover:from-indigo-500/5 group-hover:to-purple-500/5 transition-all rounded-2xl pointer-events-none"></div>
 
-          <div class="flex items-center gap-3">
-            <a href="{{ url_for('teacher.manage_attempts') }}?uid={{ s.id }}"
-               class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded">View Attempts</a>
+                <div class="flex justify-between items-start mb-4 relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">
+                            {{ s.username[0]|upper }}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">{{ s.username }}</h3>
+                            <span class="text-xs text-slate-400 font-mono">ID: #{{ s.id }}</span>
+                        </div>
+                    </div>
+                    
+                    <span class="px-3 py-1 rounded-full bg-slate-900 border border-white/10 text-xs font-bold text-indigo-300 shadow-inner">
+                        {{ counts_map.get(s.id, 0) }} Logs
+                    </span>
+                </div>
 
-            <form method="post" action="{{ url_for('teacher.delete_student_attempts', uid=s.id) }}"
-                  onsubmit="return confirm('Delete ALL attempts for {{ s.username }}?');" style="display:inline">
-              <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete All</button>
-            </form>
-          </div>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-gray-600">No students found.</p>
-    {% endif %}
-  </div>
+                <!-- Actions Grid -->
+                <div class="grid grid-cols-2 gap-3 relative z-10">
+                    <a href="{{ url_for('teacher.manage_attempts') }}?uid={{ s.id }}"
+                       class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold shadow-lg shadow-indigo-900/20 transition-all hover:scale-105 active:scale-95">
+                        <i data-lucide="search" class="w-4 h-4"></i> View
+                    </a>
+
+                    <form method="post" action="{{ url_for('teacher.delete_student_attempts', uid=s.id) }}"
+                          onsubmit="return confirm('WARNING: Wipe ALL attempts for {{ s.username }}?');">
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 transition-all text-sm font-bold">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Wipe
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+            {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="col-span-full text-center py-12 text-slate-500">
+                <i data-lucide="users" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                <p>No students in the database.</p>
+            </div>
+        {% endif %}
+    </div>
 {% endif %}
 
+</div>
+
 <script>
-/*
-  Behavior:
-  - No row click JS required for toggling (native label handles it)
-  - We sync the visual ".selected" class on checkbox change
-  - Select All toggles checkboxes and triggers change to update visuals
-*/
-
 document.addEventListener("DOMContentLoaded", () => {
-  // wire up checkbox -> row highlight
-  document.querySelectorAll('input.attempt-checkbox').forEach(cb => {
-    const row = cb.closest('.attempt-row');
-    if (!row) return;
+  // 1. Initialize Lucide Icons
+  if(window.lucide) window.lucide.createIcons();
 
-    // initialize
-    if (cb.checked) row.classList.add('selected');
+  // 2. Row Selection Logic (Visuals only, native checkbox handles state)
+  const rows = document.querySelectorAll('.attempt-row');
+  
+  const updateRowVisuals = (cb, row) => {
+      if (cb.checked) {
+          row.classList.add('selected');
+      } else {
+          row.classList.remove('selected');
+      }
+  };
 
-    // on change, toggle highlight
-    cb.addEventListener('change', () => {
-      if (cb.checked) row.classList.add('selected');
-      else row.classList.remove('selected');
-    });
+  rows.forEach(row => {
+      const cb = row.querySelector('.attempt-checkbox');
+      if(!cb) return;
 
-    // prevent action button clicks from toggling checkbox: ensure action buttons stop propagation
-    // (they already call event.stopPropagation() inline for safety)
+      // Initial state
+      updateRowVisuals(cb, row);
+
+      // Change listener
+      cb.addEventListener('change', () => updateRowVisuals(cb, row));
   });
 
-  // Select all: toggle checkboxes and dispatch change
+  // 3. Select All Logic
   const selectAll = document.getElementById('selectAllAttempts');
   if (selectAll) {
     selectAll.addEventListener('change', () => {
@@ -188,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('input.attempt-checkbox').forEach(cb => {
         if (cb.checked !== checked) {
           cb.checked = checked;
+          // Trigger change event manually so visual update logic fires
           cb.dispatchEvent(new Event('change', { bubbles: true }));
         }
       });
@@ -195,25 +298,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-// Confirm selected deletion with safety prompt for large deletes
 function confirmMassDelete() {
   const selected = Array.from(document.querySelectorAll('input.attempt-checkbox:checked'));
   if (selected.length === 0) {
-    alert("Select at least one attempt to delete.");
+    alert("No attempts selected. Mark at least one log entry to purge.");
     return false;
   }
 
   const threshold = 20;
   if (selected.length > threshold) {
-    const v = prompt("You are deleting " + selected.length + " attempts. Type DELETE to confirm.");
+    const v = prompt(`SECURITY CHECK: You are about to purge ${selected.length} records. Type DELETE to confirm.`);
     if (v !== "DELETE") {
-      alert("Bulk delete cancelled.");
+      alert("Purge sequence aborted.");
       return false;
     }
     const f = document.getElementById("confirmBulkField");
     if (f) f.value = "yes";
   } else {
-    if (!confirm("Delete " + selected.length + " attempts?")) return false;
+    if (!confirm(`Are you sure you want to delete ${selected.length} records?`)) return false;
   }
   return true;
 }

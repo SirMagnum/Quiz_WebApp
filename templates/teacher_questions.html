@@ -1,67 +1,238 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2 class="text-3xl font-bold text-indigo-700 mb-6">Manage Questions</h2>
+<style>
+/* Custom Checkbox for Dark Theme */
+.quest-checkbox {
+    appearance: none;
+    background-color: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    width: 1.25rem;
+    height: 1.25rem;
+    display: grid;
+    place-content: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.quest-checkbox::before {
+    content: "";
+    width: 0.75rem;
+    height: 0.75rem;
+    transform: scale(0);
+    transition: 0.15s transform ease-in-out;
+    box-shadow: inset 1em 1em #818cf8; /* Indigo-400 */
+    border-radius: 2px;
+}
+.quest-checkbox:checked {
+    border-color: #818cf8;
+    background-color: rgba(99, 102, 241, 0.1);
+}
+.quest-checkbox:checked::before {
+    transform: scale(1);
+}
 
-<!-- Excel Upload -->
-<div class="bg-white p-6 rounded-xl shadow-md mb-10">
-    <h3 class="text-2xl font-semibold mb-4">Bulk Upload via Excel</h3>
+/* Question Card Selection Visuals */
+.quest-card {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.quest-card.selected {
+    background: rgba(99, 102, 241, 0.15) !important; /* Indigo tint */
+    border-color: rgba(99, 102, 241, 0.4) !important;
+}
 
-    <form action="{{ url_for('teacher.upload_excel') }}" method="post" enctype="multipart/form-data" class="flex items-center gap-4">
-        <input type="file" name="file" accept=".xlsx" class="border px-4 py-2 rounded">
-        <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">Upload</button>
-    </form>
+/* Custom File Input Wrapper */
+.file-input-wrapper {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+.file-input-wrapper input[type=file] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+</style>
 
-    <p class="text-sm text-gray-500 mt-2">
-        Required columns: <strong>Question, Op1, Op2, Op3, Op4, CorrectOp</strong>
-    </p>
-</div>
+<div class="max-w-5xl mx-auto space-y-8 fade">
 
-<!-- MASS DELETE FORM -->
-<form method="post" action="{{ url_for('teacher.mass_delete') }}" id="massDeleteForm">
-
-    <div class="flex items-center gap-4 mb-6">
-        <label class="flex items-center gap-2">
-            <input type="checkbox" id="selectAll" class="w-4 h-4">
-            <span>Select All</span>
-        </label>
-
-        <button type="submit"
-                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                onclick="return confirm('Delete selected questions?');">
-            Delete Selected
-        </button>
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-game drop-shadow-sm flex items-center gap-3">
+                <i data-lucide="scroll" class="text-indigo-400 w-10 h-10"></i>
+                Quest Archives
+            </h1>
+            <p class="text-slate-400 mt-1 text-lg">Create, modify, and delete encounter parameters.</p>
+        </div>
+        
+        <a href="{{ url_for('teacher.dashboard') }}" class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-300 hover:text-white transition-colors shadow-lg">
+            <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
+            <span>Return to Command</span>
+        </a>
     </div>
 
-    <!-- QUESTION LIST -->
-    <div class="space-y-4">
-        {% for q in questions %}
-        <div class="p-4 bg-white rounded-xl shadow flex items-center gap-4">
+    <!-- EXCEL UPLOAD PANEL -->
+    <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative group">
+        <!-- Decorative Glow -->
+        <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
 
-            <!-- Checkbox -->
-            <input type="checkbox" name="qids" value="{{ q.id }}" class="w-4 h-4 question-checkbox">
-
-            <div class="flex-1">
-                <p class="font-semibold text-lg">{{ q.prompt }}</p>
-                <p class="text-gray-600 text-sm">
-                    ID: {{ q.id }} · Difficulty: {{ q.difficulty }} · Type: {{ q.qtype }}
-                </p>
+        <div class="p-6 md:p-8">
+            <div class="flex items-start justify-between gap-4 mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-white font-game flex items-center gap-2">
+                        <i data-lucide="database" class="text-emerald-400 w-6 h-6"></i>
+                        Bulk Ingestion
+                    </h3>
+                    <p class="text-sm text-slate-400 mt-1">Upload an .xlsx scroll to generate multiple quests instantly.</p>
+                </div>
             </div>
 
-            <a href="{{ url_for('teacher.edit_question', qid=q.id) }}"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
-                Edit
-            </a>
+            <form action="{{ url_for('teacher.upload_excel') }}" method="post" enctype="multipart/form-data" 
+                  class="bg-slate-900/50 p-6 rounded-xl border border-white/5 border-dashed hover:border-emerald-500/30 transition-all flex flex-col md:flex-row items-center gap-6">
+                
+                <div class="flex-grow w-full">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Scroll (.xlsx)</label>
+                    <input type="file" name="file" accept=".xlsx" required
+                           class="block w-full text-sm text-slate-400
+                                  file:mr-4 file:py-2.5 file:px-4
+                                  file:rounded-lg file:border-0
+                                  file:text-sm file:font-bold
+                                  file:bg-slate-800 file:text-indigo-400
+                                  hover:file:bg-slate-700 hover:file:text-white
+                                  cursor-pointer transition-all border border-slate-700 rounded-lg p-1">
+                </div>
+
+                <button class="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-900/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                    <span>Initialize Upload</span>
+                </button>
+            </form>
+
+            <div class="mt-4 flex items-center gap-2 text-xs text-slate-500 bg-slate-900/30 p-3 rounded-lg border border-white/5">
+                <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
+                <span>Required Data Structure: <strong class="text-slate-300">Question, Op1, Op2, Op3, Op4, CorrectOp</strong></span>
+            </div>
         </div>
-        {% endfor %}
     </div>
-</form>
+
+    <!-- MASS DELETE & LIST FORM -->
+    <form method="post" action="{{ url_for('teacher.mass_delete') }}" id="massDeleteForm" class="space-y-4">
+
+        <!-- Toolbar -->
+        <div class="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg flex items-center justify-between gap-4">
+            <label class="flex items-center gap-3 cursor-pointer group hover:text-white text-slate-400 transition-colors">
+                <input type="checkbox" id="selectAll" class="quest-checkbox">
+                <span class="text-sm font-bold uppercase tracking-wider">Select All Quests</span>
+            </label>
+
+            <button type="submit" 
+                    class="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                    onclick="return confirm('WARNING: Are you sure you want to delete the selected quests? This cannot be undone.');">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Delete Selected</span>
+            </button>
+        </div>
+
+        <!-- QUESTION LIST -->
+        <div class="grid gap-3">
+            {% for q in questions %}
+            <!-- Outer wrapper is the relative group container -->
+            <div class="quest-card group relative bg-slate-800/40 hover:bg-slate-800/80 border border-white/5 hover:border-indigo-500/30 rounded-xl transition-all hover:-translate-y-1 hover:shadow-xl overflow-hidden">
+                
+                <!-- LABEL: Clicking anywhere here toggles the checkbox -->
+                <label class="flex items-start gap-4 p-4 cursor-pointer w-full h-full" for="qid_{{ q.id }}">
+                    
+                    <!-- Checkbox -->
+                    <div class="pt-1 flex-shrink-0">
+                        <input type="checkbox" id="qid_{{ q.id }}" name="qids" value="{{ q.id }}" class="quest-checkbox question-checkbox">
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-grow min-w-0 pr-12"> <!-- Padding right to avoid overlap with absolute edit button -->
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-[10px] font-mono text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-white/5">ID: {{ q.id }}</span>
+                            
+                            <!-- Difficulty Badge -->
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border
+                                {% if q.difficulty <= 3 %} text-emerald-400 border-emerald-500/20 bg-emerald-500/5
+                                {% elif q.difficulty <= 7 %} text-yellow-400 border-yellow-500/20 bg-yellow-500/5
+                                {% else %} text-red-400 border-red-500/20 bg-red-500/5 {% endif %}">
+                                Lvl {{ q.difficulty }}
+                            </span>
+
+                            <!-- Type Badge -->
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border border-blue-500/20 bg-blue-500/5 text-blue-400">
+                                {{ q.qtype }}
+                            </span>
+                        </div>
+
+                        <p class="text-slate-200 font-medium text-lg leading-snug group-hover:text-white transition-colors">
+                            {{ q.prompt }}
+                        </p>
+                    </div>
+                </label>
+
+                <!-- Edit Action (Absolute Positioned, Stop Propagation) -->
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 z-10">
+                    <a href="{{ url_for('teacher.edit_question', qid=q.id) }}"
+                       onclick="event.stopPropagation();"
+                       class="p-2 rounded-lg bg-slate-700/50 hover:bg-indigo-600 text-slate-400 hover:text-white transition-all border border-white/5 flex items-center justify-center shadow-lg group-hover:scale-105"
+                       title="Edit Quest">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-slate-500 bg-slate-800/20 rounded-xl border border-white/5 border-dashed">
+                <i data-lucide="scroll-x" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                <p>The archives are empty. Upload a scroll or create quests manually.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+</div>
 
 <script>
-document.getElementById("selectAll").addEventListener("change", function() {
-    const checked = this.checked;
-    document.querySelectorAll(".question-checkbox").forEach(cb => cb.checked = checked);
-});
+    // Initialize Icons
+    if(window.lucide) window.lucide.createIcons();
+
+    // 1. Visual Selection Logic
+    const cards = document.querySelectorAll('.quest-card');
+    const updateCardVisuals = (cb, card) => {
+        if(cb.checked) card.classList.add('selected');
+        else card.classList.remove('selected');
+    };
+
+    cards.forEach(card => {
+        const cb = card.querySelector('.question-checkbox');
+        if(cb) {
+            // Init
+            updateCardVisuals(cb, card);
+            // On Change
+            cb.addEventListener('change', () => updateCardVisuals(cb, card));
+        }
+    });
+
+    // 2. Select All Logic
+    const selectAll = document.getElementById("selectAll");
+    if(selectAll) {
+        selectAll.addEventListener("change", function() {
+            const checked = this.checked;
+            document.querySelectorAll(".question-checkbox").forEach(cb => {
+                if (cb.checked !== checked) {
+                    cb.checked = checked;
+                    // Trigger change event for visual update
+                    cb.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        });
+    }
 </script>
 
 {% endblock %}
