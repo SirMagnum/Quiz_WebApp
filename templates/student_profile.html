@@ -10,7 +10,7 @@
                 <i data-lucide="user-circle-2" class="text-indigo-400 w-10 h-10"></i>
                 My Profile
             </h1>
-            <p class="text-slate-400 mt-1 text-lg">Operative Statistics & Service Record</p>
+            <p class="text-slate-400 mt-1 text-lg">Student Statistics & Record</p>
         </div>
         
         <div class="px-4 py-2 rounded-xl bg-slate-800 border border-white/10 flex items-center gap-2 shadow-lg">
@@ -29,7 +29,7 @@
                 <div class="inline-flex p-3 rounded-xl bg-blue-500/20 text-blue-400 mb-3 shadow-lg shadow-blue-900/20">
                     <i data-lucide="sword" class="w-6 h-6"></i>
                 </div>
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Missions</p>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Total Attempts</p>
                 <p class="text-4xl font-bold text-white font-game">{{ total_attempts }}</p>
             </div>
         </div>
@@ -41,7 +41,7 @@
                 <div class="inline-flex p-3 rounded-xl bg-purple-500/20 text-purple-400 mb-3 shadow-lg shadow-purple-900/20">
                     <i data-lucide="activity" class="w-6 h-6"></i>
                 </div>
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Average XP</p>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Average Score</p>
                 <p class="text-4xl font-bold text-white font-game">
                     {% if avg_score is not none %}
                         {{ "%.1f"|format(avg_score) }}
@@ -106,7 +106,7 @@
                             <span class="text-slate-200 font-mono">{{ ms.count }}</span>
                         </div>
                         <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">Avg. XP</span>
+                            <span class="text-slate-500">Avg. Score</span>
                             <span class="text-emerald-400 font-mono font-bold">
                                 {% if ms.count > 0 %}
                                     {{ "%.1f"|format(ms.total / ms.count) }}

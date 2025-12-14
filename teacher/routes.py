@@ -288,6 +288,83 @@ def add_student():
     return redirect(url_for("teacher.dashboard"))
 
 
+@teacher_bp.route("/students/upload_excel", methods=["POST"])
+@login_required
+@teacher_required
+def upload_students_excel():
+    try:
+        import openpyxl
+    except ImportError:
+        flash("openpyxl required.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    file = request.files.get("file")
+    if not file or not file.filename.lower().endswith(".xlsx"):
+        flash("Invalid file. Please upload an .xlsx file.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    try:
+        wb = openpyxl.load_workbook(file)
+        sheet = wb.active
+        added, skipped = 0, 0
+
+        # Expects: Username, Password
+        for i, row in enumerate(sheet.iter_rows(values_only=True), start=1):
+            if i == 1: continue # skip header
+
+            r = list(row) + [None] * 2
+            uname = str(r[0]).strip() if r[0] else None
+            pwd = str(r[1]).strip() if r[1] else None
+
+            if not uname or not pwd:
+                continue
+
+            if User.query.filter_by(username=uname).first():
+                skipped += 1
+                continue
+
+            s = User(username=uname, role=Role.STUDENT)
+            s.set_password(pwd)
+            db.session.add(s)
+            added += 1
+
+        db.session.commit()
+        flash(f"Import results: {added} new students recruited, {skipped} duplicates skipped.", "success")
+
+    except Exception as e:
+        flash(f"Excel import error: {str(e)}", "danger")
+
+    return redirect(url_for("teacher.dashboard"))
+
+
+@teacher_bp.route("/students/mass_delete", methods=["POST"])
+@login_required
+@teacher_required
+def mass_delete_students():
+    sids = request.form.getlist("student_ids")
+    
+    if not sids:
+        flash("No students selected.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    count = 0
+    try:
+        for sid in sids:
+            u = User.query.get(sid)
+            if u and u.role == Role.STUDENT:
+                # Wipe history
+                Attempt.query.filter_by(user_id=u.id).delete()
+                db.session.delete(u)
+                count += 1
+        db.session.commit()
+        flash(f"Discharged {count} students from the system.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Error deleting students.", "danger")
+
+    return redirect(url_for("teacher.dashboard"))
+
+
 @teacher_bp.route("/students/<int:uid>/delete", methods=["POST"])
 @login_required
 @teacher_required

@@ -65,14 +65,14 @@
         <div>
             <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-game drop-shadow-sm flex items-center gap-3">
                 <i data-lucide="scroll" class="text-indigo-400 w-10 h-10"></i>
-                Quest Archives
+                Question Archives
             </h1>
-            <p class="text-slate-400 mt-1 text-lg">Create, modify, and delete encounter parameters.</p>
+            <p class="text-slate-400 mt-1 text-lg">Create, modify, and delete Question parameters.</p>
         </div>
         
         <a href="{{ url_for('teacher.dashboard') }}" class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-300 hover:text-white transition-colors shadow-lg">
             <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
-            <span>Return to Command</span>
+            <span>Return to Dashboard</span>
         </a>
     </div>
 
@@ -88,15 +88,14 @@
                         <i data-lucide="database" class="text-emerald-400 w-6 h-6"></i>
                         Bulk Ingestion
                     </h3>
-                    <p class="text-sm text-slate-400 mt-1">Upload an .xlsx scroll to generate multiple quests instantly.</p>
+                    <p class="text-sm text-slate-400 mt-1">Upload an .xlsx scroll to generate multiple questsions instantly.</p>
                 </div>
             </div>
 
             <form action="{{ url_for('teacher.upload_excel') }}" method="post" enctype="multipart/form-data" 
-                  class="bg-slate-900/50 p-6 rounded-xl border border-white/5 border-dashed hover:border-emerald-500/30 transition-all flex flex-col md:flex-row items-center gap-6">
+                  class="bg-slate-900/50 p-6 rounded-xl border border-white/5 border hover:border-emerald-500/30 transition-all flex flex-col md:flex-row items-center gap-6">
                 
                 <div class="flex-grow w-full">
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Scroll (.xlsx)</label>
                     <input type="file" name="file" accept=".xlsx" required
                            class="block w-full text-sm text-slate-400
                                   file:mr-4 file:py-2.5 file:px-4
@@ -109,7 +108,7 @@
 
                 <button class="w-full md:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-900/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
                     <i data-lucide="upload-cloud" class="w-5 h-5"></i>
-                    <span>Initialize Upload</span>
+                    <span>Upload</span>
                 </button>
             </form>
 
@@ -124,10 +123,10 @@
     <form method="post" action="{{ url_for('teacher.mass_delete') }}" id="massDeleteForm" class="space-y-4">
 
         <!-- Toolbar -->
-        <div class="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg flex items-center justify-between gap-4">
+        <div class="bg-slate-900/90 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-lg flex items-center justify-between gap-4">
             <label class="flex items-center gap-3 cursor-pointer group hover:text-white text-slate-400 transition-colors">
                 <input type="checkbox" id="selectAll" class="quest-checkbox">
-                <span class="text-sm font-bold uppercase tracking-wider">Select All Quests</span>
+                <span class="text-sm font-bold uppercase tracking-wider">Select All Questions</span>
             </label>
 
             <button type="submit" 
@@ -191,7 +190,7 @@
             {% else %}
             <div class="text-center py-12 text-slate-500 bg-slate-800/20 rounded-xl border border-white/5 border-dashed">
                 <i data-lucide="scroll-x" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
-                <p>The archives are empty. Upload a scroll or create quests manually.</p>
+                <p>The List is empty. Upload a file with your questions.</p>
             </div>
             {% endfor %}
         </div>

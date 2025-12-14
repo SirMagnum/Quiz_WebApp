@@ -8,9 +8,9 @@
         <div>
             <h2 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-game drop-shadow-sm flex items-center gap-3">
                 <i data-lucide="scroll-text" class="text-blue-400 w-8 h-8"></i>
-                Quest History
+                Quiz History
             </h2>
-            <p class="text-slate-400 mt-1">A chronicle of your past battles and gained experience.</p>
+            <p class="text-slate-400 mt-1">A record of your past quiz attempts.</p>
         </div>
         
         <!-- Quick Stats (Optional Visual) -->
@@ -97,11 +97,11 @@
                 <div class="bg-slate-800/50 p-6 rounded-full mb-6 border border-white/5 animate-pulse">
                     <i data-lucide="sword" class="w-12 h-12 text-slate-600"></i>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-300 font-game mb-3">No Battles Recorded</h3>
-                <p class="text-slate-500 max-w-sm mb-8 leading-relaxed">Your chronicles are currently empty. Enter the arena to begin your legend!</p>
+                <h3 class="text-2xl font-bold text-slate-300 font-game mb-3">No Attempts Recorded</h3>
+                <p class="text-slate-500 max-w-sm mb-8 leading-relaxed">Your records are currently empty. Attempt a quiz to begin your Journey!</p>
                 
                 <a href="{{ url_for('quiz.start') }}" class="group relative inline-flex items-center justify-center px-8 py-3 font-bold text-white transition-all duration-200 bg-indigo-600 font-game rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600 ring-offset-slate-900 hover:bg-indigo-500 hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/20">
-                    <span class="mr-2">Start New Quest</span>
+                    <span class="mr-2">Start New Quiz</span>
                     <i data-lucide="arrow-right" class="w-5 h-5 group-hover:translate-x-1 transition-transform"></i>
                 </a>
             </div>

@@ -4,19 +4,16 @@
 
 :root {
     /* Palette */
-    --game-bg: #0f172a;       /* Slate 900 */
+    --game-bg: #0f172a;
+    /* Slate 900 */
     --game-glass: rgba(15, 23, 42, 0.6);
     --game-border: rgba(255, 255, 255, 0.1);
-    
+
     /* Accents */
     --accent-indigo: #6366f1;
     --accent-purple: #a855f7;
     --accent-emerald: #10b981;
     --accent-red: #ef4444;
-    
-    /* Gradients */
-    --grad-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    --grad-glass: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
 }
 
 /* =========================================
@@ -28,36 +25,57 @@ body {
     background-color: var(--game-bg);
     color: #e2e8f0;
     min-height: 100vh;
-    
+
     /* Deep Space Gradient Background */
-    background-image: 
-        radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
-        radial-gradient(at 50% 100%, hsla(225,39%,30%,1) 0, transparent 50%);
-    background-attachment: fixed; /* Parallax-like feel */
+    background-image:
+        radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+        radial-gradient(at 50% 100%, hsla(225, 39%, 30%, 1) 0, transparent 50%);
+    background-attachment: fixed;
 }
 
 /* Fun Headers */
-h1, h2, h3, h4, .font-game {
+h1,
+h2,
+h3,
+h4,
+.font-game {
     font-family: 'Fredoka', sans-serif;
     letter-spacing: 0.5px;
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #020617; }
-::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4f46e5;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6366f1;
+}
 
 /* Form Inputs - Dark Mode Override */
-input, select, textarea {
+input,
+select,
+textarea {
     background-color: rgba(15, 23, 42, 0.6) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: white !important;
-    border-radius: 0.75rem !important; /* rounded-xl */
+    border-radius: 0.75rem !important;
     transition: all 0.2s ease !important;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
     border-color: var(--accent-indigo) !important;
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
     outline: none;
@@ -74,22 +92,20 @@ input:focus, select:focus, textarea:focus {
     border-right: 1px solid var(--game-border);
 }
 
-/* Nav Items with Glow Strip */
 .nav-item {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    color: #94a3b8; /* Slate 400 */
+    color: #94a3b8;
 }
 
 .nav-item:hover {
     background: rgba(99, 102, 241, 0.15);
     transform: translateX(5px);
     color: #fff;
-    text-shadow: 0 0 8px rgba(255,255,255,0.5);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
-/* Active/Hover glow indicator */
 .nav-item::before {
     content: '';
     position: absolute;
@@ -110,7 +126,6 @@ input:focus, select:focus, textarea:focus {
    COMPONENTS: CARDS & LISTS
    ========================================= */
 
-/* Glass Cards */
 .glass-panel {
     background: rgba(30, 41, 59, 0.4);
     backdrop-filter: blur(8px);
@@ -118,29 +133,39 @@ input:focus, select:focus, textarea:focus {
     border-radius: 1rem;
 }
 
-/* Action Rows (Attempts/Questions) */
-.attempt-row, .quest-card {
+/* Action Rows */
+.attempt-row,
+.quest-card,
+.student-row {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.attempt-row:hover, .quest-card:hover {
+.attempt-row:hover,
+.quest-card:hover {
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.15);
     transform: translateX(4px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.attempt-row.selected, .quest-card.selected {
+/* Selection Highlights */
+.attempt-row.selected,
+.quest-card.selected {
     background: rgba(99, 102, 241, 0.15) !important;
     border-color: rgba(99, 102, 241, 0.4) !important;
+}
+
+/* Table Row Highlight (Dashboard) */
+tr.selected td {
+    background-color: rgba(99, 102, 241, 0.15) !important;
 }
 
 /* =========================================
    COMPONENTS: CUSTOM CHECKBOXES
    ========================================= */
 
-.attempt-checkbox, .quest-checkbox {
+.attempt-checkbox,
+.quest-checkbox,
+.student-checkbox {
     appearance: none;
     -webkit-appearance: none;
     background-color: rgba(15, 23, 42, 0.5);
@@ -152,10 +177,12 @@ input:focus, select:focus, textarea:focus {
     place-content: center;
     transition: all 0.2s;
     cursor: pointer;
-    margin: 0; /* Reset margin */
+    margin: 0;
 }
 
-.attempt-checkbox::before, .quest-checkbox::before {
+.attempt-checkbox::before,
+.quest-checkbox::before,
+.student-checkbox::before {
     content: "";
     width: 0.75rem;
     height: 0.75rem;
@@ -165,12 +192,16 @@ input:focus, select:focus, textarea:focus {
     border-radius: 2px;
 }
 
-.attempt-checkbox:checked, .quest-checkbox:checked {
+.attempt-checkbox:checked,
+.quest-checkbox:checked,
+.student-checkbox:checked {
     border-color: var(--accent-indigo);
     background-color: rgba(99, 102, 241, 0.1);
 }
 
-.attempt-checkbox:checked::before, .quest-checkbox:checked::before {
+.attempt-checkbox:checked::before,
+.quest-checkbox:checked::before,
+.student-checkbox:checked::before {
     transform: scale(1);
 }
 
@@ -220,6 +251,7 @@ input:focus, select:focus, textarea:focus {
         opacity: 0;
         transform: translateY(15px) scale(0.98);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -230,11 +262,18 @@ input:focus, select:focus, textarea:focus {
     animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Subtle pulse for status dots */
 @keyframes pulse-glow {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .5;
+    }
 }
+
 .animate-pulse-slow {
     animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

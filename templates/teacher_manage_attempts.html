@@ -1,69 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
 
-<style>
-/* Custom Checkbox for Dark Theme */
-.attempt-checkbox {
-    appearance: none;
-    background-color: rgba(15, 23, 42, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    width: 1.25rem;
-    height: 1.25rem;
-    display: grid;
-    place-content: center;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-.attempt-checkbox::before {
-    content: "";
-    width: 0.75rem;
-    height: 0.75rem;
-    transform: scale(0);
-    transition: 0.15s transform ease-in-out;
-    box-shadow: inset 1em 1em #818cf8; /* Indigo-400 */
-    border-radius: 2px;
-}
-.attempt-checkbox:checked {
-    border-color: #818cf8;
-    background-color: rgba(99, 102, 241, 0.1);
-}
-.attempt-checkbox:checked::before {
-    transform: scale(1);
-}
-
-/* Row Visuals */
-.attempt-row {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-.attempt-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: translateX(4px);
-}
-.attempt-row.selected {
-    background: rgba(99, 102, 241, 0.15) !important; /* Indigo tint */
-    border-color: rgba(99, 102, 241, 0.4) !important;
-}
-
-/* Label logic */
-.attempt-label {
-    cursor: pointer;
-    user-select: none;
-}
-</style>
-
 <div class="max-w-6xl mx-auto space-y-8 fade">
 
-    <!-- Header -->
+    <!-- HEADER -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
             <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400 font-game drop-shadow-sm flex items-center gap-3">
                 <i data-lucide="shield-alert" class="text-red-400 w-10 h-10"></i>
-                Attempt Control
+                Student Attempt Management
             </h1>
-            <p class="text-slate-400 mt-1 text-lg">Administrative oversight of combat logs.</p>
         </div>
         
         <!-- Contextual Help -->
@@ -74,8 +20,7 @@
     </div>
 
 {% if filtered_student %}
-    <!-- === STUDENT VIEW: LIST OF ATTEMPTS === -->
-    
+    <!-- === SPECIFIC STUDENT VIEW: LIST OF ATTEMPTS === -->
     <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
         
         <!-- Toolbar -->
@@ -166,8 +111,8 @@
                             </div>
                         </label>
 
-                        <!-- Actions (Separate from Label click) -->
-                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pl-4 border-l border-white/5 bg-slate-800/0 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none">
+                        <!-- Actions (Stop Propagation to prevent row selection) -->
+                        <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 pl-4">
                             <a href="{{ url_for('quiz.results', attempt_id=a.id) }}"
                                onclick="event.stopPropagation();"
                                class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all border border-indigo-500/20"
@@ -192,7 +137,7 @@
             {% else %}
             <div class="text-center py-12 text-slate-500 flex flex-col items-center">
                 <i data-lucide="file-x" class="w-12 h-12 mb-3 opacity-50"></i>
-                <p>No records found for this operative.</p>
+                <p>No records found.</p>
             </div>
             {% endif %}
         </div>
@@ -200,7 +145,6 @@
 
 {% else %}
     <!-- === DEFAULT VIEW: STUDENT LIST === -->
-    
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% if students %}
             {% for s in students %}
@@ -217,7 +161,7 @@
                         </div>
                         <div>
                             <h3 class="font-bold text-white text-lg">{{ s.username }}</h3>
-                            <span class="text-xs text-slate-400 font-mono">ID: #{{ s.id }}</span>
+                            <span class="text-xs text-slate-400 font-mono">ID: #{{ s.id - 1 }}</span>
                         </div>
                     </div>
                     
@@ -257,32 +201,23 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // 1. Initialize Lucide Icons
-  if(window.lucide) window.lucide.createIcons();
-
-  // 2. Row Selection Logic (Visuals only, native checkbox handles state)
+  // 1. Row Selection Logic (Visuals only, native checkbox handles state)
   const rows = document.querySelectorAll('.attempt-row');
   
   const updateRowVisuals = (cb, row) => {
-      if (cb.checked) {
-          row.classList.add('selected');
-      } else {
-          row.classList.remove('selected');
-      }
+      if (cb.checked) row.classList.add('selected');
+      else row.classList.remove('selected');
   };
 
   rows.forEach(row => {
       const cb = row.querySelector('.attempt-checkbox');
       if(!cb) return;
-
-      // Initial state
+      // Init & Listener
       updateRowVisuals(cb, row);
-
-      // Change listener
       cb.addEventListener('change', () => updateRowVisuals(cb, row));
   });
 
-  // 3. Select All Logic
+  // 2. Select All Logic
   const selectAll = document.getElementById('selectAllAttempts');
   if (selectAll) {
     selectAll.addEventListener('change', () => {
@@ -290,8 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.querySelectorAll('input.attempt-checkbox').forEach(cb => {
         if (cb.checked !== checked) {
           cb.checked = checked;
-          // Trigger change event manually so visual update logic fires
-          cb.dispatchEvent(new Event('change', { bubbles: true }));
+          cb.dispatchEvent(new Event('change', { bubbles: true })); // Trigger visual update
         }
       });
     });
@@ -299,23 +233,19 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function confirmMassDelete() {
-  const selected = Array.from(document.querySelectorAll('input.attempt-checkbox:checked'));
-  if (selected.length === 0) {
-    alert("No attempts selected. Mark at least one log entry to purge.");
+  const selected = document.querySelectorAll('input.attempt-checkbox:checked').length;
+  if (selected === 0) {
+    alert("No attempts selected.");
     return false;
   }
-
+  
   const threshold = 20;
-  if (selected.length > threshold) {
-    const v = prompt(`SECURITY CHECK: You are about to purge ${selected.length} records. Type DELETE to confirm.`);
-    if (v !== "DELETE") {
-      alert("Purge sequence aborted.");
-      return false;
-    }
-    const f = document.getElementById("confirmBulkField");
-    if (f) f.value = "yes";
+  if (selected > threshold) {
+    const v = prompt(`SECURITY CHECK: Deleting ${selected} records. Type DELETE to confirm.`);
+    if (v !== "DELETE") return false;
+    document.getElementById("confirmBulkField").value = "yes";
   } else {
-    if (!confirm(`Are you sure you want to delete ${selected.length} records?`)) return false;
+    if (!confirm(`Delete ${selected} attempts?`)) return false;
   }
   return true;
 }

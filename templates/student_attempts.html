@@ -8,16 +8,16 @@
         <div>
             <h1 class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 font-game drop-shadow-sm flex items-center gap-3">
                 <i data-lucide="history" class="text-indigo-400 w-8 h-8"></i>
-                Battle History
+                Quiz Attempt History
             </h1>
             <p class="text-slate-400 mt-1">
-                Viewing combat records for operative: <span class="text-white font-bold px-2 py-0.5 rounded bg-white/10">{{ student.username }}</span>
+                Viewing performance report of: <span class="text-white font-bold px-2 py-0.5 rounded bg-white/10">{{ student.username }}</span>
             </p>
         </div>
         
         <a href="{{ url_for('teacher.dashboard') }}" class="group flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-300 hover:text-white transition-colors shadow-lg">
             <i data-lucide="arrow-left" class="w-4 h-4 group-hover:-translate-x-1 transition-transform"></i>
-            <span>Return to Command</span>
+            <span>Return to Dashboard</span>
         </a>
     </div>
 
@@ -32,8 +32,8 @@
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-900/50 text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-white/5">
                         <tr>
-                            <th class="px-6 py-4">Mission ID</th>
-                            <th class="px-6 py-4">Combat Mode</th>
+                            <th class="px-6 py-4">Attempt ID</th>
+                            <th class="px-6 py-4">Quiz Mode</th>
                             <th class="px-6 py-4">Score Achieved</th>
                             <th class="px-6 py-4">Timestamp</th>
                             <th class="px-6 py-4 text-right">Details</th>
@@ -68,10 +68,8 @@
 
                             <!-- Score -->
                             <td class="px-6 py-4">
-                                <div class="font-bold text-white font-game text-lg flex items-center gap-2">
+                                <div class="font-bold text-white font-game text-lg flex items-center gap-2 px-11">
                                     {{ a.score }}
-                                    <!-- Use raw value since percentage logic depends on max score context not always present here, or treat score as XP -->
-                                    <span class="text-xs text-slate-500 font-sans font-normal uppercase">XP</span>
                                 </div>
                             </td>
 
@@ -99,8 +97,8 @@
                 <div class="p-4 rounded-full bg-slate-800/50 mb-4 border border-white/5 shadow-inner">
                     <i data-lucide="scroll-x" class="w-10 h-10 opacity-40"></i>
                 </div>
-                <h3 class="text-lg font-bold text-slate-400 mb-1">No Combat Records</h3>
-                <p class="text-sm">This operative has not participated in any missions yet.</p>
+                <h3 class="text-lg font-bold text-slate-400 mb-1">No Records</h3>
+                <p class="text-sm">The student has not participated in any quizzes yet.</p>
             </div>
         {% endif %}
     </div>
