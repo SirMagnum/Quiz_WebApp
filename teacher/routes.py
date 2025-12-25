@@ -6,6 +6,8 @@ import json
 from functools import wraps
 from sqlalchemy import func
 import collections
+import csv
+import io
 
 teacher_bp = Blueprint("teacher", __name__)
 
@@ -196,30 +198,44 @@ def mass_delete():
 @login_required
 @teacher_required
 def upload_excel():
-    try:
-        import openpyxl
-    except Exception:
-        flash("openpyxl is required for Excel upload.", "danger")
-        return redirect(url_for("teacher.questions"))
-
     file = request.files.get("file")
     if not file:
         flash("No file selected.", "danger")
         return redirect(url_for("teacher.questions"))
 
-    if not (file.filename and file.filename.lower().endswith(".xlsx")):
-        flash("Only .xlsx files supported.", "danger")
+    filename = file.filename.lower()
+    if not (filename.endswith(".xlsx") or filename.endswith(".csv")):
+        flash("Only .xlsx or .csv files supported.", "danger")
         return redirect(url_for("teacher.questions"))
 
+    rows = []
+    
     try:
-        wb = openpyxl.load_workbook(file)
-        sheet = wb.active
+        # --- Handle XLSX ---
+        if filename.endswith(".xlsx"):
+            try:
+                import openpyxl
+            except ImportError:
+                flash("openpyxl module missing. Please install it or use CSV.", "danger")
+                return redirect(url_for("teacher.questions"))
+                
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+            rows = sheet.iter_rows(values_only=True)
+            
+        # --- Handle CSV ---
+        elif filename.endswith(".csv"):
+            # Read file stream as text
+            stream = io.StringIO(file.stream.read().decode("utf-8-sig", errors="replace"), newline=None)
+            csv_reader = csv.reader(stream)
+            rows = list(csv_reader)
+
         added, updated = 0, 0
 
-        for i, row in enumerate(sheet.iter_rows(values_only=True), start=1):
+        for i, row in enumerate(rows, start=1):
             if i == 1: continue # skip header
 
-            # Unpack row safely
+            # Unpack row safely (ensure at least 7 items)
             row_list = list(row) + [None] * 7
             qtxt, op1, op2, op3, op4, correct, difficulty = row_list[:7]
 
@@ -292,24 +308,41 @@ def add_student():
 @login_required
 @teacher_required
 def upload_students_excel():
-    try:
-        import openpyxl
-    except ImportError:
-        flash("openpyxl required.", "danger")
-        return redirect(url_for("teacher.dashboard"))
-
     file = request.files.get("file")
-    if not file or not file.filename.lower().endswith(".xlsx"):
-        flash("Invalid file. Please upload an .xlsx file.", "danger")
+    if not file:
+        flash("No file selected.", "danger")
         return redirect(url_for("teacher.dashboard"))
 
+    filename = file.filename.lower()
+    if not (filename.endswith(".xlsx") or filename.endswith(".csv")):
+        flash("Only .xlsx or .csv files supported.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    rows = []
+    
     try:
-        wb = openpyxl.load_workbook(file)
-        sheet = wb.active
+        # --- Handle XLSX ---
+        if filename.endswith(".xlsx"):
+            try:
+                import openpyxl
+            except ImportError:
+                flash("openpyxl module missing.", "danger")
+                return redirect(url_for("teacher.dashboard"))
+            
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+            rows = sheet.iter_rows(values_only=True)
+
+        # --- Handle CSV ---
+        elif filename.endswith(".csv"):
+            stream = io.StringIO(file.stream.read().decode("utf-8-sig", errors="replace"), newline=None)
+            csv_reader = csv.reader(stream)
+            rows = list(csv_reader)
+
         added, skipped = 0, 0
 
         # Expects: Username, Password
-        for i, row in enumerate(sheet.iter_rows(values_only=True), start=1):
+        for i, row in enumerate(rows, start=1):
             if i == 1: continue # skip header
 
             r = list(row) + [None] * 2
@@ -332,7 +365,7 @@ def upload_students_excel():
         flash(f"Import results: {added} new students recruited, {skipped} duplicates skipped.", "success")
 
     except Exception as e:
-        flash(f"Excel import error: {str(e)}", "danger")
+        flash(f"Import error: {str(e)}", "danger")
 
     return redirect(url_for("teacher.dashboard"))
 
@@ -380,6 +413,27 @@ def delete_student(uid):
     db.session.delete(u)
     db.session.commit()
     flash(f"Student '{u.username}' deleted.", "success")
+    return redirect(url_for("teacher.dashboard"))
+
+
+@teacher_bp.route("/students/<int:uid>/reset_password", methods=["POST"])
+@login_required
+@teacher_required
+def reset_student_password(uid):
+    u = User.query.get_or_404(uid)
+    new_password = request.form.get("new_password", "").strip()
+
+    if u.role != Role.STUDENT:
+        flash("Cannot reset password for non-student users.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    if not new_password:
+        flash("Password cannot be empty.", "danger")
+        return redirect(url_for("teacher.dashboard"))
+
+    u.set_password(new_password)
+    db.session.commit()
+    flash(f"Password for '{u.username}' has been updated.", "success")
     return redirect(url_for("teacher.dashboard"))
 
 

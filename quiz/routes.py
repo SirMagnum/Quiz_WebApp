@@ -5,12 +5,13 @@ from flask_login import login_required, current_user
 from extensions import db
 from models import Question, Attempt, User
 from . import quiz_bp
-import random, json
+import random
+import json
 from datetime import datetime
 import importlib
 
 # -------------------------------
-# STUDENT: Quiz Start Page (Modes Gallery)
+# VIEWS
 # -------------------------------
 @quiz_bp.route("/start")
 @login_required
@@ -20,130 +21,123 @@ def start():
 @quiz_bp.route("/start/<mode>")
 @login_required
 def start_mode(mode):
-    # canonical mode names expected by backend
-    valid_modes = ["adaptive", "challenger", "minuterush", "firststrike", "levelinfinity"]
-
-    if mode not in valid_modes:
-        flash("Invalid mode selected.", "danger")
+    valid = ["adaptive", "challenger", "minuterush", "firststrike", "levelinfinity"]
+    if mode not in valid:
+        flash("Invalid mode.", "danger")
         return redirect(url_for("quiz.start"))
-
-    # direct render of quiz.html with the selected mode so client auto-starts
     return render_template("quiz.html", mode=mode)
 
 @quiz_bp.route("/run/<mode>")
 @login_required
 def run_quiz(mode):
-    # legacy route kept for compatibility
     return render_template("quiz.html", mode=mode)
 
 # -------------------------------
-# API: Start Attempt
+# API: START ATTEMPT
 # -------------------------------
 @quiz_bp.route("/api/start_attempt", methods=["POST"])
 @login_required
-def start_attempt():
+def start_attempt_api():
     data = request.get_json() or {}
     mode = data.get("mode", "adaptive")
     params = data.get("params", {})
 
-    # Initialize details with metadata about the run (e.g., time limit)
-    initial_log = [{
-        "action": "start",
-        "params": params,
-        "timestamp": datetime.utcnow().isoformat()
-    }]
-
+    # Create Attempt Record
     attempt = Attempt(
         user_id=current_user.id,
         mode=mode,
         score=0,
-        details=json.dumps(initial_log)
+        details=json.dumps([{
+            "action": "start",
+            "params": params,
+            "timestamp": datetime.utcnow().isoformat()
+        }])
     )
     db.session.add(attempt)
     db.session.commit()
 
+    # Special Init for First Strike
+    if mode == "firststrike":
+        try:
+            from quiz.modes.firststrike import start_attempt as fs_start
+            fs_start(attempt)
+            db.session.commit()
+        except ImportError:
+            return jsonify({"error": "Mode error. Please restart server."}), 500
+        except Exception as e:
+            current_app.logger.error(f"FS Init Error: {e}")
+            return jsonify({"error": "Initialization failed"}), 500
+
     return jsonify({"attempt_id": attempt.id})
 
 # -------------------------------
-# API: Get Next Question
+# API: GET QUESTION
 # -------------------------------
 @quiz_bp.route("/api/get_question", methods=["POST"])
 @login_required
-def get_question():
-    body = request.get_json() or {}
-    mode = (body.get("mode") or "adaptive").lower()
-    attempt_id = body.get("attempt_id")
-    last_outcome = body.get("last_outcome")
-    state = body.get("state", {}) or {}
+def get_question_api():
+    data = request.get_json() or {}
+    mode = (data.get("mode") or "adaptive").lower()
+    attempt_id = data.get("attempt_id")
+    state = data.get("state", {}) or {}
 
-    attempt = Attempt.query.get(attempt_id) if attempt_id else None
-    if attempt_id and not attempt:
-        return jsonify({"error": "invalid attempt_id"}), 400
+    attempt = Attempt.query.get(attempt_id)
+    if not attempt:
+        return jsonify({"error": "Invalid attempt"}), 400
 
-    # Normalize current_diff
+    # 1. First Strike Override
+    if mode == "firststrike":
+        try:
+            from quiz.modes.firststrike import get_question as fs_get
+            return jsonify(fs_get(attempt))
+        except ImportError:
+            return jsonify({"error": "Mode module missing"}), 500
+
+    # 2. Standard Logic (Stateless)
     try:
         current_diff = int(state.get("current_diff", 3))
-    except Exception:
-        current_diff = 3
-
-    # Normalize seen_qids -> list of ints
-    seen_raw = state.get("seen_qids", []) or []
+    except: current_diff = 3
+    
     seen = []
-    try:
-        for v in seen_raw:
-            if v is not None:
-                seen.append(int(v))
-    except Exception:
-        # fallback: best-effort conversion
-        seen = [int(x) for x in seen_raw if isinstance(x, (int, str)) and str(x).isdigit()]
+    for x in (state.get("seen_qids") or []):
+        try: seen.append(int(x))
+        except: pass
 
-    # Incorporate last_outcome into seen immediately
-    if last_outcome and last_outcome.get("qid") is not None:
-        try:
-            qid_val = int(last_outcome.get("qid"))
-            if qid_val not in seen:
-                seen.append(qid_val)
-        except Exception:
-            pass
+    # Check database status
+    total = Question.query.count()
+    if total == 0: return jsonify({"finished": True, "message": "No questions"})
+    
+    # --- FIX: Skip completion check for levelinfinity ---
+    if mode != "levelinfinity":
+        if len(seen) >= total:
+            return jsonify({"finished": True, "message": "All done"})
 
-    # Quick sanity: if we've seen all questions -> finished
-    total_q_count = Question.query.count()
-    if total_q_count == 0:
-        return jsonify({"finished": True, "message": "No questions in database.", "attempt_id": attempt.id if attempt else None})
-
-    if len(seen) >= total_q_count:
-        return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
-
-    # --- MODE DISPATCHER ---
-    # Try to load quiz/modes/<mode>.py -> get_question(diff, seen)
-    # If not found, fallback to random strict exclusion
+    # Dispatcher
     q = None
     try:
-        module_name = f"quiz.modes.{mode}"
-        mod = importlib.import_module(module_name)
+        mod = importlib.import_module(f"quiz.modes.{mode}")
         if hasattr(mod, "get_question"):
             q = mod.get_question(current_diff, seen)
-    except ImportError:
-        pass # Mode module not found, use fallback
-    except Exception as e:
-        current_app.logger.error(f"Error in mode {mode} get_question: {e}")
+    except:
+        pass # Fallback
 
-    # Fallback: strict pool excluding seen
-    if (not q) or (getattr(q, "id", None) in seen):
-        pool = [qq for qq in Question.query.all() if qq.id not in seen]
-        if not pool:
-            return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
-        q = random.choice(pool)
-
-    # Final guard
+    # Fallback if specific mode failed
     if not q:
-        return jsonify({"finished": True, "message": "No unseen questions left.", "attempt_id": attempt.id if attempt else None})
+        # For Level Infinity, we should force a pick even if seen=total
+        if mode == "levelinfinity":
+             pool = Question.query.all()
+             if pool: q = random.choice(pool)
+        else:
+             pool = [x for x in Question.query.all() if x.id not in seen]
+             if pool: q = random.choice(pool)
 
-    # Return payload
+    if not q:
+        return jsonify({"finished": True})
+
     return jsonify({
         "id": q.id,
         "prompt": q.prompt,
-        "options": json.loads(q.options_json),
+        "options": json.loads(q.options_json or "[]"),
         "difficulty": q.difficulty,
         "qtype": q.qtype,
         "state": {"current_diff": current_diff, "seen_qids": seen}
@@ -151,276 +145,157 @@ def get_question():
 
 
 # -------------------------------
-# API: Submit Answer (Robust Logic)
+# API: SUBMIT ANSWER
 # -------------------------------
 @quiz_bp.route("/api/submit_answer", methods=["POST"])
 @login_required
-def submit_answer():
-    body = request.get_json() or {}
-    attempt_id = body.get("attempt_id")
-    qid = body.get("question_id")
-    selected = body.get("selected")
-    mode = (body.get("mode") or "").lower()
-    time_used = body.get("time_used")
-    
+def submit_answer_api():
+    data = request.get_json() or {}
+    attempt_id = data.get("attempt_id")
+    qid = data.get("question_id")
+    selected = data.get("selected")
+    mode = (data.get("mode") or "").lower()
+    time_used = data.get("time_used")
+
     attempt = Attempt.query.get(attempt_id)
-    if not attempt:
-        return jsonify({"error": "invalid attempt_id"}), 400
-
-    q = Question.query.get(qid)
-    if not q:
-        return jsonify({"error": "question not found"}), 404
-
-    # 1. Normalize selection to list of strings
-    try:
-        if isinstance(selected, list):
-            sel = [str(x).strip() for x in selected if x is not None]
-        else:
-            sel = [str(selected).strip()] if selected is not None else []
-    except Exception:
-        sel = []
-
-    # 2. Build Maps from Option ID <-> Text
-    try:
-        opts = json.loads(q.options_json) if q.options_json else []
-    except: opts = []
+    if not attempt: return jsonify({"error": "Invalid attempt"}), 400
     
-    opt_id_to_text = {}
-    opt_text_to_id = {}
-    for o in opts:
-        oid = str(o.get("id")).strip()
-        text = str(o.get("text") or "").strip()
-        opt_id_to_text[oid] = text
-        opt_text_to_id[text.lower()] = oid
+    # Normalize Selection
+    sel_list = []
+    if isinstance(selected, list):
+        sel_list = [str(x).strip() for x in selected if x is not None]
+    elif selected is not None:
+        sel_list = [str(selected).strip()]
 
-    # 3. Normalize Correct Answer from DB
-    raw_correct = []
-    if q.correct_answers:
-        try:
-            raw_correct = [str(x).strip() for x in q.correct_answers.split(",") if x]
-        except:
-            raw_correct = [str(q.correct_answers).strip()]
+    # 1. First Strike Override
+    if mode == "firststrike":
+        from quiz.modes.firststrike import submit_answer as fs_submit
+        res = fs_submit(attempt, qid, sel_list, time_used)
+        db.session.commit()
+        return jsonify(res)
 
-    # 4. Map raw_correct to Canonical Option IDs (Smart Match)
-    mapped_correct_ids = set()
-    for entry in raw_correct:
-        e = entry.strip()
-        # Direct ID match?
-        if e in opt_id_to_text:
-            mapped_correct_ids.add(e)
-            continue
-        # Text match?
-        lookup = e.lower()
-        if lookup in opt_text_to_id:
-            mapped_correct_ids.add(opt_text_to_id[lookup])
-            continue
-        # Numeric fallback?
-        try:
-            if str(int(e)) in opt_id_to_text:
-                mapped_correct_ids.add(str(int(e)))
-                continue
-        except: pass
-        # Fallback: treat as raw text
-        mapped_correct_ids.add(e)
+    # 2. Standard Scoring
+    q = Question.query.get(qid)
+    if not q: return jsonify({"error": "Question not found"}), 404
 
-    # 5. Normalize User Selection to Canonical IDs
-    selected_ids = set()
-    selected_texts = set()
-    for s in sel:
-        if s in opt_id_to_text:
-            selected_ids.add(s)
-        else:
-            s_lookup = s.strip().lower()
-            if s_lookup in opt_text_to_id:
-                selected_ids.add(opt_text_to_id[s_lookup])
-            else:
-                selected_texts.add(s_lookup)
+    # Check Correctness (Simplified logic for brevity, robust enough for standard usage)
+    try: opts = json.loads(q.options_json or "[]")
+    except: opts = []
+    id_map = {str(o['id']): str(o.get('text','')).lower() for o in opts}
+    
+    raw = [str(x).strip() for x in (q.correct_answers or "").split(",") if x.strip()]
+    correct_set = set()
+    for r in raw:
+        if r in id_map: correct_set.add(id_map[r])
+        else: correct_set.add(r.lower())
+        
+    user_set = set()
+    for u in sel_list:
+        if u in id_map: user_set.add(id_map[u])
+        else: user_set.add(u.lower())
+        
+    correct = (user_set == correct_set)
 
-    # 6. Determine Correctness
-    correct = False
-    if q.qtype == "multiple":
-        # Multiple: Set equality on IDs (strict)
-        ids_in_mapped = {m for m in mapped_correct_ids if m in opt_id_to_text}
-        if ids_in_mapped:
-            correct = (ids_in_mapped == selected_ids)
-        else:
-            # Fallback: compare text sets
-            mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
-            correct = (mapped_texts == selected_texts)
-    else:
-        # Single: If ANY selected ID matches ANY correct ID
-        if len(selected_ids) == 1:
-            sel_id = next(iter(selected_ids))
-            ids_in_mapped = {m for m in mapped_correct_ids if m in opt_id_to_text}
-            if ids_in_mapped:
-                correct = (sel_id in ids_in_mapped)
-            else:
-                # Fallback text check
-                sel_text = opt_id_to_text.get(sel_id, "").strip().lower()
-                mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
-                correct = (sel_text in mapped_texts)
-        elif len(selected_texts) == 1:
-            st = next(iter(selected_texts))
-            mapped_texts = {str(x).strip().lower() for x in raw_correct if x}
-            correct = (st in mapped_texts)
-        else:
-            correct = False
-
-    # 7. Scoring & Mode Handling
+    # Mode Adjustments (e.g. Adaptive)
     points = 1 if correct else 0
-    adjustment = {}
-
-    if mode:
-        module_name = f"quiz.modes.{mode}"
+    adj = {}
+    
+    if mode and mode != "firststrike":
         try:
-            mod = importlib.import_module(module_name)
+            mod = importlib.import_module(f"quiz.modes.{mode}")
             if hasattr(mod, "handle_result"):
-                res = mod.handle_result(attempt, q, bool(correct), time_used=time_used)
-                if isinstance(res, tuple) and len(res) >= 1:
-                    points = int(res[0]) if res[0] is not None else points
-                    if len(res) > 1 and isinstance(res[1], dict):
-                        adjustment = res[1]
-        except ModuleNotFoundError:
-            pass # Default scoring
-        except Exception as e:
-            current_app.logger.error(f"Mode {mode} error: {e}")
+                res = mod.handle_result(attempt, q, correct, time_used)
+                if isinstance(res, tuple):
+                    points = res[0]
+                    if len(res) > 1: adj = res[1]
+        except: pass
 
     # Update Attempt
-    try:
-        attempt.score = (attempt.score or 0) + int(points)
-    except:
-        attempt.score = (attempt.score or 0) + (1 if correct else 0)
-
-    # 8. Log Event
-    try:
-        # Load existing details to append
-        details_list = json.loads(attempt.details) if attempt.details else []
-    except:
-        details_list = []
-
-    event = {
-        "qid": q.id,
-        "selected": sel,
-        "correct": bool(correct),
-        "time_used": time_used,
-        "difficulty": q.difficulty,
+    attempt.score = (attempt.score or 0) + points
+    
+    # Log
+    try: details = json.loads(attempt.details) if attempt.details else []
+    except: details = []
+    details.append({
+        "qid": qid, "selected": sel_list, "correct": correct,
+        "time_used": time_used, "difficulty": q.difficulty,
         "timestamp": datetime.utcnow().isoformat()
-    }
-    details_list.append(event)
-    attempt.details = json.dumps(details_list)
-    attempt.ended_at = datetime.utcnow() # update timestamp on every move
-
+    })
+    attempt.details = json.dumps(details)
+    attempt.ended_at = datetime.utcnow()
     db.session.commit()
-
-    # Fallback adjustment for Adaptive if mode module missing
-    if not adjustment and mode == "adaptive":
-        adjustment = {
+    
+    # Adaptive Default
+    if not adj and mode == "adaptive":
+        adj = {
             "next_diff": min(10, q.difficulty + 1) if correct else max(1, q.difficulty - 1),
-            "time_factor": "decrease" if not correct else "increase"
+            "rule": "default"
         }
 
     return jsonify({
-        "correct": bool(correct),
+        "correct": correct,
         "attempt_score": attempt.score,
-        "adjustment": adjustment,
-        "correct_answers": list(raw_correct)
+        "adjustment": adj,
+        "correct_answers": raw
     })
 
-
 # -------------------------------
-# API: End Attempt
+# API: END ATTEMPT
 # -------------------------------
 @quiz_bp.route("/api/end_attempt", methods=["POST"])
 @login_required
-def end_attempt():
-    body = request.get_json() or {}
-    attempt_id = body.get("attempt_id")
-
-    attempt = Attempt.query.get(attempt_id)
-    if not attempt:
-        return jsonify({"error": "invalid attempt_id"}), 400
-
-    attempt.ended_at = datetime.utcnow()
-    db.session.commit()
-
-    return jsonify({"ok": True, "attempt_id": attempt.id})
-
+def end_attempt_api():
+    data = request.get_json() or {}
+    attempt = Attempt.query.get(data.get("attempt_id"))
+    if attempt:
+        attempt.ended_at = datetime.utcnow()
+        db.session.commit()
+        return jsonify({"ok": True, "attempt_id": attempt.id})
+    return jsonify({"error": "Invalid"}), 400
 
 # -------------------------------
-# RESULTS PAGE
+# PAGES
 # -------------------------------
 @quiz_bp.route("/results/<int:attempt_id>")
 @login_required
 def results(attempt_id):
     a = Attempt.query.get_or_404(attempt_id)
-
-    if a.user_id != current_user.id and getattr(current_user.role, "value", None) != "teacher":
+    if a.user_id != current_user.id and getattr(current_user, "role", None) != "teacher":
         abort(403)
-
+        
     try:
         details = json.loads(a.details) if a.details else []
-        # Filter out metadata events (like "start") that don't have QIDs
-        game_events = [d for d in details if d.get("qid")]
-    except Exception:
-        details = []
-        game_events = []
+        events = [d for d in details if d.get("qid")]
+    except: events = []
 
-    total_questions = len(game_events)
-    correct_count = a.score or 0
+    total = Question.query.count() if a.mode == "firststrike" else len(events)
+    correct_c = a.score or 0
+    pct = round((correct_c / total * 100), 1) if total else 0
     
-    percentage = None
-    if total_questions > 0:
-        # Calculate purely based on correct/total for simple display
-        # (This might differ from 'score' if score includes bonus points)
-        raw_correct = sum(1 for d in game_events if d.get("correct"))
-        percentage = round((raw_correct / total_questions) * 100, 1)
+    return render_template("results.html", attempt=a, details=events, 
+                           total_questions=total, percentage=pct, correct_count=correct_c)
 
-    return render_template("results.html", 
-                           attempt=a, 
-                           details=game_events,
-                           total_questions=total_questions, 
-                           percentage=percentage, 
-                           correct_count=correct_count)
-
-
-# -------------------------------
-# VIEWS: Student Profile & Attempts
-# -------------------------------
 @quiz_bp.route("/my_attempts")
 @login_required
 def my_attempts():
-    # If teacher, show all? Or just their own? Usually teachers have their own profile too.
-    # If they want to see student attempts, they use the dashboard.
     attempts = Attempt.query.filter_by(user_id=current_user.id).order_by(Attempt.started_at.desc()).all()
-    return render_template("my_attempts.html", attempts=attempts, user_cache={})
+    return render_template("my_attempts.html", attempts=attempts)
 
 @quiz_bp.route("/profile")
 @login_required
 def profile():
-    user_id = current_user.id
-    attempts = Attempt.query.filter_by(user_id=user_id).order_by(Attempt.started_at.desc()).all()
-
-    total_attempts = len(attempts)
+    attempts = Attempt.query.filter_by(user_id=current_user.id).order_by(Attempt.started_at.desc()).all()
     scores = [a.score or 0 for a in attempts]
+    avg = sum(scores)/len(scores) if scores else 0
     
-    avg_score = sum(scores) / len(scores) if scores else 0
-    best_score = max(scores) if scores else 0
-
-    mode_stats = {}
+    stats = {}
     for a in attempts:
-        mode = a.mode or "unknown"
-        mode_stats.setdefault(mode, {"count": 0, "total": 0})
-        mode_stats[mode]["count"] += 1
-        mode_stats[mode]["total"] += (a.score or 0)
-
-    recent = attempts[:10]
-
-    return render_template(
-        "student_profile.html",
-        attempts=attempts,
-        total_attempts=total_attempts,
-        avg_score=avg_score,
-        best_score=best_score,
-        mode_stats=mode_stats,
-        recent=recent
-    )
+        m = a.mode or "unknown"
+        stats.setdefault(m, {"count":0, "total":0})
+        stats[m]["count"] += 1
+        stats[m]["total"] += (a.score or 0)
+        
+    return render_template("student_profile.html", attempts=attempts, 
+                           total_attempts=len(attempts), avg_score=avg, 
+                           best_score=max(scores) if scores else 0,
+                           mode_stats=stats, recent=attempts[:10])

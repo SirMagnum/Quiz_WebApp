@@ -76,7 +76,7 @@
         </a>
     </div>
 
-    <!-- EXCEL UPLOAD PANEL -->
+    <!-- EXCEL/CSV UPLOAD PANEL -->
     <div class="bg-slate-800/40 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative group">
         <!-- Decorative Glow -->
         <div class="absolute -right-10 -top-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-all"></div>
@@ -88,7 +88,7 @@
                         <i data-lucide="database" class="text-emerald-400 w-6 h-6"></i>
                         Bulk Ingestion
                     </h3>
-                    <p class="text-sm text-slate-400 mt-1">Upload an .xlsx scroll to generate multiple questsions instantly.</p>
+                    <p class="text-sm text-slate-400 mt-1">Upload an .xlsx or .csv scroll to generate multiple questions instantly.</p>
                 </div>
             </div>
 
@@ -96,7 +96,7 @@
                   class="bg-slate-900/50 p-6 rounded-xl border border-white/5 border hover:border-emerald-500/30 transition-all flex flex-col md:flex-row items-center gap-6">
                 
                 <div class="flex-grow w-full">
-                    <input type="file" name="file" accept=".xlsx" required
+                    <input type="file" name="file" accept=".xlsx, .csv" required
                            class="block w-full text-sm text-slate-400
                                   file:mr-4 file:py-2.5 file:px-4
                                   file:rounded-lg file:border-0
@@ -114,7 +114,7 @@
 
             <div class="mt-4 flex items-center gap-2 text-xs text-slate-500 bg-slate-900/30 p-3 rounded-lg border border-white/5">
                 <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
-                <span>Required Data Structure: <strong class="text-slate-300">Question, Op1, Op2, Op3, Op4, CorrectOp</strong></span>
+                <span>Required Structure: <strong class="text-slate-300">Question, Op1, Op2, Op3, Op4, CorrectOp, Diff</strong></span>
             </div>
         </div>
     </div>

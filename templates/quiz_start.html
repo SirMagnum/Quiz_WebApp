@@ -1,136 +1,165 @@
-{% extends "base.html" %}
-{% block content %}
+{% extends "base.html" %} {% block content %}
 
 <div class="max-w-7xl mx-auto space-y-8 fade">
-
     <!-- Header -->
     <div class="text-center space-y-2 mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 font-game drop-shadow-sm">
-            Choose Your Destiny
+        <h1
+            class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 font-game drop-shadow-sm">
+            Choose Your Type
         </h1>
         <p class="text-slate-400 text-lg max-w-2xl mx-auto">
-            Select a combat simulation mode. Each path offers unique challenges and rewards.
+            Select a quiz mode. Each one offers unique challenges.
         </p>
     </div>
 
     <!-- CARDS GRID -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
         <!-- Adaptive Mode -->
         <a href="{{ url_for('quiz.start_mode', mode='adaptive') }}" class="group relative block h-full">
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100"></div>
-            
-            <div class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-indigo-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-indigo-900/20 flex flex-col">
-                
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100">
+            </div>
+
+            <div
+                class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-indigo-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-indigo-900/20 flex flex-col">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-lg shadow-indigo-900/20">
+                    <div
+                        class="p-3 rounded-xl bg-indigo-500/20 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors shadow-lg shadow-indigo-900/20">
                         <i data-lucide="bar-chart-2" class="w-8 h-8"></i>
                     </div>
-                    <span class="px-2 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">Dynamic</span>
+                    <span
+                        class="px-2 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider">Dynamic</span>
                 </div>
 
-                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-indigo-300 transition-colors">Adaptive</h2>
+                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-indigo-300 transition-colors">
+                    Adaptive
+                </h2>
                 <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">
-                    The Algorithm adjusts difficulty in real-time. Correct answers raise the stakes; mistakes offer a reprieve. Perfect for steady progression.
+                    Difficulty adjusts automatically based on the student’s responses,
+                    enabling a personalized and progressive assessment.
                 </p>
             </div>
         </a>
 
         <!-- Challenger Mode -->
         <a href="{{ url_for('quiz.start_mode', mode='challenger') }}" class="group relative block h-full">
-            <div class="absolute inset-0 bg-gradient-to-br from-orange-600/20 to-amber-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100"></div>
-            
-            <div class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-orange-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-orange-900/20 flex flex-col">
-                
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-orange-600/20 to-amber-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100">
+            </div>
+
+            <div
+                class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-orange-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-orange-900/20 flex flex-col">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 rounded-xl bg-orange-500/20 text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors shadow-lg shadow-orange-900/20">
+                    <div
+                        class="p-3 rounded-xl bg-orange-500/20 text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors shadow-lg shadow-orange-900/20">
                         <i data-lucide="swords" class="w-8 h-8"></i>
                     </div>
-                    <span class="px-2 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-300 text-[10px] font-bold uppercase tracking-wider">Ranked</span>
+                    <span
+                        class="px-2 py-1 rounded-md bg-orange-500/10 border border-orange-500/20 text-orange-300 text-[10px] font-bold uppercase tracking-wider">Ranked</span>
                 </div>
 
-                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-orange-300 transition-colors">Challenger</h2>
+                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-orange-300 transition-colors">
+                    Challenger
+                </h2>
                 <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">
-                    Prove your worth. Difficulty ramps up relentlessly, and time limits tighten as you climb the tower. Only the strong survive.
+                    Questions increase in difficulty with strict time constraints, testing
+                    accuracy and performance under pressure.
                 </p>
             </div>
         </a>
 
         <!-- Minute Rush -->
         <a href="{{ url_for('quiz.start_mode', mode='minuterush') }}" class="group relative block h-full">
-            <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-green-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100"></div>
-            
-            <div class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-emerald-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-emerald-900/20 flex flex-col">
-                
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-green-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100">
+            </div>
+
+            <div
+                class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-emerald-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-emerald-900/20 flex flex-col">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-lg shadow-emerald-900/20">
+                    <div
+                        class="p-3 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-lg shadow-emerald-900/20">
                         <i data-lucide="zap" class="w-8 h-8"></i>
                     </div>
-                    <span class="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Speedrun</span>
+                    <span
+                        class="px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">Speedrun</span>
                 </div>
 
-                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-emerald-300 transition-colors">Minute Rush</h2>
+                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-emerald-300 transition-colors">
+                    Minute Rush
+                </h2>
                 <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">
-                    The clock is ticking. Clear as many objectives as possible within the time limit. Speed and accuracy are your only allies.
+                    Students answer as many questions as possible within a fixed time
+                    limit, focusing on speed and accuracy.
                 </p>
             </div>
         </a>
 
         <!-- First Strike -->
         <a href="{{ url_for('quiz.start_mode', mode='firststrike') }}" class="group relative block h-full">
-            <div class="absolute inset-0 bg-gradient-to-br from-red-600/20 to-rose-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100"></div>
-            
-            <div class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-red-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-red-900/20 flex flex-col">
-                
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-red-600/20 to-rose-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100">
+            </div>
+
+            <div
+                class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-red-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-red-900/20 flex flex-col">
                 <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 rounded-xl bg-red-500/20 text-red-400 group-hover:bg-red-500 group-hover:text-white transition-colors shadow-lg shadow-red-900/20">
+                    <div
+                        class="p-3 rounded-xl bg-red-500/20 text-red-400 group-hover:bg-red-500 group-hover:text-white transition-colors shadow-lg shadow-red-900/20">
                         <i data-lucide="skull" class="w-8 h-8"></i>
                     </div>
-                    <span class="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-300 text-[10px] font-bold uppercase tracking-wider">Hardcore</span>
+                    <span
+                        class="px-2 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-red-300 text-[10px] font-bold uppercase tracking-wider">Hardcore</span>
                 </div>
 
-                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-red-300 transition-colors">First Strike</h2>
+                <h2 class="text-2xl font-bold text-white font-game mb-2 group-hover:text-red-300 transition-colors">
+                    First Strike
+                </h2>
                 <p class="text-slate-400 text-sm leading-relaxed mb-6 flex-grow">
-                    Zero tolerance for failure. One mistake ends the run immediately. How long can you maintain perfection?
+                    The assessment ends after the first incorrect response, emphasizing
+                    precision and consistency.
                 </p>
             </div>
         </a>
 
         <!-- Level Infinity -->
-        <a href="{{ url_for('quiz.start_mode', mode='levelinfinity') }}" class="group relative block h-full md:col-span-2 lg:col-span-2">
-            <div class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-fuchsia-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100"></div>
-            
-            <div class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-purple-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-purple-900/20 flex flex-col md:flex-row items-center gap-6">
-                
-                <div class="flex-shrink-0 p-5 rounded-2xl bg-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-lg shadow-purple-900/20">
+        <a href="{{ url_for('quiz.start_mode', mode='levelinfinity') }}"
+            class="group relative block h-full md:col-span-2 lg:col-span-2">
+            <div
+                class="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-fuchsia-600/0 rounded-2xl blur-xl group-hover:blur-2xl transition-all opacity-0 group-hover:opacity-100">
+            </div>
+
+            <div
+                class="relative h-full bg-slate-800/40 backdrop-blur-md border border-white/10 hover:border-purple-500/50 rounded-2xl p-6 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-2xl group-hover:shadow-purple-900/20 flex flex-col md:flex-row items-center gap-6">
+                <div
+                    class="flex-shrink-0 p-5 rounded-2xl bg-purple-500/20 text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-colors shadow-lg shadow-purple-900/20">
                     <i data-lucide="infinity" class="w-10 h-10"></i>
                 </div>
 
                 <div class="flex-grow text-center md:text-left">
                     <div class="flex items-center justify-center md:justify-start gap-3 mb-2">
-                        <h2 class="text-2xl font-bold text-white font-game group-hover:text-purple-300 transition-colors">Level Infinity</h2>
-                        <span class="px-2 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10px] font-bold uppercase tracking-wider">Arcade</span>
+                        <h2
+                            class="text-2xl font-bold text-white font-game group-hover:text-purple-300 transition-colors">
+                            Level Infinity
+                        </h2>
+                        <span
+                            class="px-2 py-1 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-300 text-[10px] font-bold uppercase tracking-wider">Arcade</span>
                     </div>
                     <p class="text-slate-400 text-sm leading-relaxed mb-0">
-                        Chaos reigns. A mix of all question types, randomness and twists. The ultimate test of your adaptability.
+                        A continuous sequence of randomized questions designed to assess
+                        overall understanding and adaptability.
                     </p>
-                </div>
-
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:bg-purple-500 group-hover:border-purple-400 transition-all">
-                        <i data-lucide="play" class="w-5 h-5 text-purple-400 group-hover:text-white fill-current"></i>
-                    </div>
                 </div>
             </div>
         </a>
-
     </div>
 
     <!-- Footer Hint -->
     <div class="bg-indigo-900/20 border border-indigo-500/20 rounded-xl p-4 flex items-start gap-3 mt-8">
         <i data-lucide="info" class="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5"></i>
         <div class="text-sm text-indigo-200/80">
-            <strong class="text-indigo-300">Disclaimer:</strong> Adaptive mode is the only Mode working currently. Other modes are under development and will be available in future updates.
+            <strong class="text-indigo-300">Disclaimer:</strong>
+            More Modes Coming Soon!
         </div>
     </div>
 </div>

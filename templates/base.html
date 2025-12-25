@@ -72,6 +72,14 @@
             text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
+        /* Active Nav Item */
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.25); /* Stronger indigo tint */
+            color: #fff;
+            border-left: 3px solid #818cf8; /* Indigo accent bar */
+            border-radius: 0.5rem;
+        }
+        
         /* Active/Hover glow strip */
         .nav-item::before {
             content: '';
@@ -159,7 +167,7 @@
 
             <div class="text-xs font-bold text-slate-500 uppercase px-3 py-2 mt-2">Main Menu</div>
 
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('auth.index') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if request.endpoint == 'auth.index' %}active{% endif %}" href="{{ url_for('auth.index') }}">
                 <i data-lucide="home" class="w-5 h-5"></i>
                 <span>Home</span>
             </a>
@@ -169,15 +177,15 @@
 
             <div class="text-xs font-bold text-slate-500 uppercase px-3 py-2 mt-4">Admin Zone</div>
 
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('teacher.dashboard') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'teacher.dashboard' in request.endpoint %}active{% endif %}" href="{{ url_for('teacher.dashboard') }}">
                 <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                 <span>Dashboard</span>
             </a>
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('teacher.questions') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'teacher.questions' in request.endpoint %}active{% endif %}" href="{{ url_for('teacher.questions') }}">
                 <i data-lucide="scroll" class="w-5 h-5"></i>
                 <span>Questions</span>
             </a>
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('teacher.analytics') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'teacher.analytics' in request.endpoint %}active{% endif %}" href="{{ url_for('teacher.analytics') }}">
                 <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
                 <span>Analytics</span>
             </a>
@@ -187,15 +195,15 @@
 
             <div class="text-xs font-bold text-slate-500 uppercase px-3 py-2 mt-4">Campaign</div>
 
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('quiz.start') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'quiz.start' in request.endpoint or 'quiz.run_quiz' in request.endpoint %}active{% endif %}" href="{{ url_for('quiz.start') }}">
                 <i data-lucide="sword" class="w-5 h-5"></i>
                 <span>Start Quiz</span>
             </a>
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('quiz.my_attempts') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'quiz.my_attempts' in request.endpoint %}active{% endif %}" href="{{ url_for('quiz.my_attempts') }}">
                 <i data-lucide="history" class="w-5 h-5"></i>
                 <span>My Attempts</span>
             </a>
-            <a class="block p-3 rounded-lg nav-item flex items-center gap-3" href="{{ url_for('quiz.profile') }}">
+            <a class="block p-3 rounded-lg nav-item flex items-center gap-3 {% if 'quiz.profile' in request.endpoint %}active{% endif %}" href="{{ url_for('quiz.profile') }}">
                 <i data-lucide="user" class="w-5 h-5"></i>
                 <span>My Profile</span>
             </a>
