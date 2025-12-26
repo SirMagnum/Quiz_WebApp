@@ -260,7 +260,14 @@ def end_attempt_api():
 @login_required
 def results(attempt_id):
     a = Attempt.query.get_or_404(attempt_id)
-    if a.user_id != current_user.id and getattr(current_user, "role", None) != "teacher":
+    
+    # FIX: Robust check for role (handle Enum or String)
+    user_role = getattr(current_user, "role", None)
+    # If role is an Enum (e.g. Role.TEACHER), get its value, else use string
+    role_value = getattr(user_role, "value", user_role) if user_role else None
+
+    # Allow if owner OR teacher
+    if a.user_id != current_user.id and role_value != "teacher":
         abort(403)
         
     try:
